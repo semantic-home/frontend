@@ -1,0 +1,7 @@
+.padActions {
+    display: flex;
+    gap: var(--gap);
+    flex-wrap: wrap;
+}
+
+

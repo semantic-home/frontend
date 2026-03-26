@@ -1,0 +1,90 @@
+.zonesContent {
+    grid-column: 2;
+    grid-row: 1;
+    padding-left: 24px;
+    padding-right: 24px;
+    padding-top: var(--gap);
+    background: var(--surface);
+
+    min-width: 0;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    border-radius: var(--radius);
+    font-family: var(--font-sans);
+}
+
+.zonesContent h1 {
+    font-size: 2rem;
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+}
+
+.zonesContent h1,
+.zonesContent h2 {
+    font-family: inherit;
+    font-weight: 400;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.zonesHeader {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 16px;
+
+}
+
+.headerTopRow {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+
+
+.feed {
+    width: min(100%, 850px);
+    margin-inline: auto;
+    /*padding: var(--gap);*/
+    transition: transform 180ms ease;
+    will-change: transform;
+}
+
+.feedCentered {
+    width: min(100%, 800px);
+    transform: translateX(-14px);
+}
+
+@media (max-width: 960px) {
+    .zonesContent {
+        grid-column: 1;
+        grid-row: 1;
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .feedCentered {
+        transform: none;
+    }
+
+    .headerTopRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .createControllerButton {
+        align-self: flex-start;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .feed {
+        transition: none;
+    }
+    .feedCentered {
+        transform: none;
+    }
+}

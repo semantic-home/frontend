@@ -1,0 +1,72 @@
+.padExplain {
+    display: grid;
+    grid-template-columns: 60px minmax(0, 1fr);
+    align-items: start;
+    padding: var(--gap);
+    background: var(--surface);
+    gap: 12px;
+    border-bottom: 1px solid var(--fine-line);
+}
+
+.padExplainWhy {
+    font-weight: bold;
+}
+
+.padExplainBody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.padExplainWhyText {
+    overflow-wrap: anywhere;
+}
+
+.reasonDetailsAnchor {
+    align-self: flex-start;
+}
+
+.reasonDetailsTrigger {
+    padding: 0;
+    color: var(--text-muted);
+}
+
+.reasonDetailsTrigger:hover {
+    color: var(--text);
+}
+
+.reasonDetailsText {
+    font-weight: 600;
+}
+
+.reasonDetailsPopover {
+    min-width: min(320px, calc(100vw - 120px));
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    box-shadow: 0 18px 32px rgba(0, 0, 0, 0.24);
+}
+
+.reasonDetailsPopoverArrow {
+    background: var(--surface-2);
+    border-top: 1px solid var(--border);
+    border-left: 1px solid var(--border);
+    left: 18px;
+}
+
+.reasonDetailsContent {
+    display: grid;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.detailLabel {
+    color: var(--text);
+    font-weight: 600;
+    margin-right: 6px;
+}

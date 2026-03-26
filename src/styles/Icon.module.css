@@ -1,0 +1,8 @@
+.icon {
+    width: 20px;
+    height: 20px;
+    justify-self: center;   /* Icon im Slot horizontal mittig */
+    align-self: center;     /* vertikal mittig */
+    color: currentColor;
+    padding: 0;
+}

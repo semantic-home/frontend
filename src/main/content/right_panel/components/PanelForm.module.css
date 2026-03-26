@@ -1,0 +1,139 @@
+.panelForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.panelSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.panelSectionTitle {
+    color: var(--text);
+    font-weight: bold;
+}
+
+.panelSectionSubtitle {
+    color: var(--text);
+    font-weight: bold;
+}
+
+.panelSectionBody {
+    background: var(--bg);
+    padding: var(--gap);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 0;
+}
+
+.panelFieldGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.panelFieldLabel {
+    font-weight: bold;
+    color: var(--text);
+}
+
+.panelField,
+.panelReadonlyField {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--text);
+    padding: 12px;
+    font: inherit;
+    line-height: 1.35;
+    box-sizing: border-box;
+}
+
+.panelReadonlyField {
+    color: var(--text-muted);
+    background: var(--surface-2);
+}
+
+.panelField::placeholder {
+    color: var(--text-muted);
+}
+
+.panelField:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+    border-color: var(--border-strong);
+}
+
+.panelFieldHint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.panelSubmitRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.panelSubmitMessage {
+    flex: 1;
+    min-width: 0;
+    min-height: 20px;
+    color: var(--text-muted);
+}
+
+.panelSubmitMessageSuccess {
+    color: var(--accent-strong);
+}
+
+.panelSubmitMessageError {
+    color: var(--danger, #f87171);
+}
+
+.panelSubmitActions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.panelDangerButton {
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    background: rgba(248, 113, 113, 0.1);
+    color: #fecaca;
+}
+
+.panelDangerButton:hover:not(:disabled) {
+    background: rgba(248, 113, 113, 0.16);
+}
+
+@container (max-width: 420px) {
+    .panelSubmitRow {
+        justify-content: stretch;
+    }
+
+    .panelSubmitMessage {
+        flex-basis: 100%;
+    }
+
+    .panelSubmitActions {
+        width: 100%;
+    }
+
+    .panelSubmitActions > button {
+        width: 100%;
+        min-width: 0;
+    }
+}

@@ -1,0 +1,93 @@
+:root {
+  color-scheme: dark;
+  /* Typography */
+  --font-sans: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  --font-size: 15px;
+
+  /* Layout */
+  --sidebar-width: 180px;
+  --page-gap: 16px;
+  /* Surfaces (Dark theme) */
+  --bg: #0f1316;          /* App background */
+  --surface: #141a1f;     /* Cards/sections */
+  --surface-2: #1a2229;   /* Slightly raised */
+
+  /* Text */
+  --text: #e7edf3;
+  --text-muted: #aab6c2;
+  --badge-text: #475767;
+
+  /* Borders */
+  --border: #26313a;
+  --border-strong: #32404c;
+
+  /* Accents (gray highlight) */
+  --accent: #8fa0ad;          /* subtle highlight */
+  --accent-strong: #c5d0d8;   /* brighter for focus/active */
+
+  /* Button states */
+  --action-btn-bg: #2A3640;
+  --btn-bg: transparent;
+  --btn-text: var(--text);
+
+  --btn-hover-bg: rgba(143, 160, 173, 0.12);
+  --btn-active-bg: rgba(143, 160, 173, 0.18);
+  --btn-active-hover-bg: rgba(143, 160, 173, 0.26);
+
+  --focus-ring: rgba(197, 208, 216, 0.45);
+
+  /* Radii / spacing */
+  --radius: 10px;
+  --radius-sm: 8px;
+  --gap: 12px;
+
+  /* Fine lines */
+  --fine-line: rgba(255, 255, 255, 0.06);
+
+}
+
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f6;
+
+  --text: #111821;
+  --text-muted: #475767;
+  --badge-text: #aab6c2;
+
+  --border: #d7dee6;
+  --border-strong: #c5ced8;
+
+  --btn-hover-bg: rgba(17, 24, 33, 0.05);
+  --btn-active-bg: rgba(17, 24, 33, 0.09);
+  --btn-active-hover-bg: rgba(14, 7, 7, 0.13);
+
+  --focus-ring: rgba(15, 19, 22, 0.25);
+
+  --accent: #2d383c;
+  --accent-strong: #111821;
+
+  /* Fine lines */
+  --fine-line: rgba(0, 0, 0, 0.06);
+}
+
+html {
+  overflow-y: scroll;
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--font-size);
+  overflow-x: clip;
+}
+
+#root {
+  min-height: 100vh;
+  overflow-x: clip;
+}

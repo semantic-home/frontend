@@ -1,0 +1,33 @@
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 999px;
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.button:hover:not(:disabled) {
+    background: var(--btn-hover-bg);
+    border-color: var(--border-strong);
+    color: var(--text);
+}
+
+.button:active:not(:disabled) {
+    background: var(--btn-active-bg);
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.icon {
+    width: 18px;
+    height: 18px;
+}

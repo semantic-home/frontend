@@ -1,0 +1,10 @@
+.git
+.gitlab
+.idea
+.codex
+node_modules
+node_modules.bak.*
+dist
+npm-debug.log*
+.env
+.env.local

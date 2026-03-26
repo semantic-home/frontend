@@ -1,0 +1,37 @@
+.anchor {
+    position: relative;
+}
+
+.trigger {
+    appearance: none;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    text-align: left;
+}
+
+.trigger:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.popover {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    z-index: 20;
+}
+
+.arrow {
+    position: absolute;
+    top: -8px;
+    left: 28px;
+    width: 14px;
+    height: 14px;
+    transform: rotate(45deg);
+    pointer-events: none;
+}

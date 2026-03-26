@@ -1,0 +1,13 @@
+.padPredict {
+    composes: padExplain from "./PadExplain.module.css";
+    border-bottom: none;
+
+}
+
+.padPredictNext {
+    composes: padExplainWhy from "./PadExplain.module.css";
+}
+
+.padPredictNextText {
+    composes: padExplainWhyText from "./PadExplain.module.css";
+}

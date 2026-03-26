@@ -1,0 +1,132 @@
+.form {
+    composes: panelForm from "./PanelForm.module.css";
+}
+
+.section {
+    composes: panelSection from "./PanelForm.module.css";
+}
+
+.sectionTitle {
+    composes: panelSectionTitle from "./PanelForm.module.css";
+}
+
+.sectionBody {
+    composes: panelSectionBody from "./PanelForm.module.css";
+}
+
+.fieldGroup {
+    composes: panelFieldGroup from "./PanelForm.module.css";
+}
+
+.fieldLabel {
+    composes: panelFieldLabel from "./PanelForm.module.css";
+}
+
+.formField {
+    composes: panelField from "./PanelForm.module.css";
+}
+
+.readonlyField {
+    composes: panelReadonlyField from "./PanelForm.module.css";
+}
+
+.fieldHint {
+    composes: panelFieldHint from "./PanelForm.module.css";
+}
+
+.submitRow {
+    composes: panelSubmitRow from "./PanelForm.module.css";
+}
+
+.submitMessage {
+    composes: panelSubmitMessage from "./PanelForm.module.css";
+}
+
+.submitMessageError {
+    composes: panelSubmitMessageError from "./PanelForm.module.css";
+}
+
+.submitMessageSuccess {
+    composes: panelSubmitMessageSuccess from "./PanelForm.module.css";
+}
+
+.submitActions {
+    composes: panelSubmitActions from "./PanelForm.module.css";
+}
+
+.dangerButton {
+    composes: panelDangerButton from "./PanelForm.module.css";
+}
+
+.linkedEntityList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.linkedEntityRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    min-width: 0;
+}
+
+.linkedEntityCopy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.linkedEntityLabel {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.linkedEntityId {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    overflow-wrap: anywhere;
+}
+
+.linkedEntityEmpty {
+    color: var(--text-muted);
+    padding: 12px;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+}
+
+.entityPickerRow {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    min-width: 0;
+}
+
+.addEntityButton,
+.removeEntityButton {
+    flex-shrink: 0;
+}
+
+@container (max-width: 520px) {
+    .linkedEntityRow,
+    .entityPickerRow {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .addEntityButton {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .removeEntityButton {
+        align-self: flex-start;
+    }
+}

@@ -1,0 +1,5 @@
+export function PadFooter() {
+    return (
+        <></>
+    )
+}

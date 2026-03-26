@@ -1,0 +1,99 @@
+.tutorialContainer {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(16px, 1.8vw, 24px);
+    min-height: 0;
+    min-width: 0;
+}
+
+.tutorialButtons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 0;
+    align-items: stretch;
+}
+
+.tutorialButtonSlot {
+    min-height: 48px;
+    height: 48px;
+    padding: 2px;
+    border-radius: calc(var(--radius-sm) + 2px);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.tutorialButtonSlot > * {
+    block-size: 100%;
+    inline-size: 100%;
+}
+
+.sectionContent {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(14px, 1.6vw, 20px);
+    min-height: 0;
+    min-width: 0;
+}
+
+.sectionTitle {
+    margin: 0;
+}
+
+.sectionBody {
+    display: grid;
+    grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+    gap: clamp(16px, 2vw, 28px);
+    min-height: 0;
+    min-width: 0;
+    align-items: stretch;
+}
+
+.sectionBody > * {
+    min-height: 0;
+    min-width: 0;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 4px);
+    background: var(--surface-2);
+    padding: clamp(14px, 1.6vw, 18px);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.details {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+}
+
+@media (max-width: 900px) {
+    .tutorialContainer,
+    .sectionContent {
+        grid-template-rows: auto auto;
+    }
+
+    .sectionBody {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        min-height: auto;
+    }
+
+    .tutorialButtons {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .sectionBody > * {
+        overflow-y: visible;
+    }
+
+    .details {
+        min-height: auto;
+    }
+}
+
+@media (max-width: 640px) {
+    .tutorialButtons {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

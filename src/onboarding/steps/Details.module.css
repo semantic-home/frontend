@@ -1,0 +1,291 @@
+/* --- terminal (agent connect) --- */
+
+.terminal {
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: #0f172a;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+.terminalHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #1e293b;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.dot[data-color="red"] { background: #ff5f56; }
+.dot[data-color="yellow"] { background: #ffbd2e; }
+.dot[data-color="green"] { background: #27c93f; }
+
+.terminalTitle {
+    color: #94a3b8;
+    margin-left: 8px;
+}
+
+.terminalBody {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.terminalBody code {
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.prompt { color: #10b981; }
+.success { color: #10b981; }
+.waiting { color: #f59e0b; }
+.muted { color: #94a3b8; }
+
+/* --- shared panel (discovery, classify, controller, demo) --- */
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1 0 auto;
+    min-height: 0;
+    min-width: 0;
+}
+
+.panelStatus {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+}
+
+.panelHint {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.domainGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.domainLabel {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: capitalize;
+    color: var(--text-muted);
+    margin: 0 0 4px;
+}
+
+.entityRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 4px;
+    min-width: 0;
+}
+
+.reviewRow {
+    background: var(--surface-2);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.entityLabel {
+    font-weight: 500;
+    color: var(--text);
+    min-width: 0;
+}
+
+.entityCopy {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.entityId {
+    color: var(--text-muted);
+    font-family: monospace;
+    font-size: 11px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.confidenceBadge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--accent-subtle);
+    color: var(--accent-strong);
+}
+
+/* --- inline classification edit --- */
+
+.editSelect {
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    min-width: 0;
+}
+
+.reviewRow .entityCopy {
+    flex: 1 1 220px;
+}
+
+.reviewRow .editSelect {
+    flex: 1 1 140px;
+}
+
+/* --- controller suggestions --- */
+
+.suggestion {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+
+.suggestionBody {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.suggestionRole {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.suggestionActions {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.candidateList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.candidateOption {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+}
+
+.candidateOptionSelected {
+    border-color: var(--border-strong);
+    background: var(--btn-active-bg);
+}
+
+.candidateCheckbox {
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
+.successText {
+    color: #10b981;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.errorText {
+    color: #ef4444;
+    font-size: 12px;
+}
+
+.controllerPicker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.controllerChip {
+    min-width: 180px;
+    justify-content: space-between;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+}
+
+.controllerChipActive {
+    background: var(--btn-active-bg);
+    color: var(--accent-strong);
+    border-color: var(--border-strong);
+}
+
+.controllerChipMeta {
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.ruleEditorShell {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+    background: var(--surface);
+    min-width: 0;
+    overflow: hidden;
+    container-type: inline-size;
+}
+
+.ruleEditorHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+    .suggestionBody {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .reviewRow {
+        align-items: stretch;
+    }
+
+    .controllerChip {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .reviewRow .editSelect,
+    .suggestionActions .editSelect,
+    .suggestionActions button {
+        width: 100%;
+    }
+}

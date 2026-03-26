@@ -1,0 +1,74 @@
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius);
+    transition: opacity 0.15s;
+}
+
+.indicator {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 3px;
+}
+
+.label {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.description {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* --- status variants --- */
+
+.completed .indicator {
+    background: var(--accent-strong);
+    color: white;
+}
+
+.completed .label {
+    color: var(--text-muted);
+}
+
+.active .indicator {
+    background: var(--accent-subtle);
+    color: var(--accent-strong);
+    box-shadow: 0 0 0 2px var(--accent-strong);
+}
+
+.active .label {
+    color: var(--text);
+}
+
+.locked .indicator {
+    background: var(--surface-2);
+    color: var(--text-muted);
+}
+
+.locked .label,
+.locked .description {
+    color: var(--text-muted);
+    opacity: 0.5;
+}

@@ -1,0 +1,31 @@
+.controllerPads {
+}
+
+.padHeading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+}
+
+.padHeadingText {
+    font-size: 1.2rem;
+}
+
+.padList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: visible;
+}
+
+.pad {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius);
+    padding: var(--gap);
+    background: var(--surface-2);
+    gap: 12px;
+    overflow: visible;
+}

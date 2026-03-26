@@ -1,0 +1,7 @@
+.padSemantics {
+    display: flex;
+    border-radius: var(--radius);
+    padding: var(--gap);
+    background: var(--surface);
+    flex-direction: column;
+}

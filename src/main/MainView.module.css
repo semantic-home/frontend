@@ -1,0 +1,53 @@
+.main {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+    min-height: 0;
+}
+
+.withRightPanel {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr) clamp(320px, 28vw, 470px);
+}
+
+
+.main > * {
+    min-width: 0;
+}
+
+.sidebarBackdrop {
+    display: none;
+}
+
+@media (max-width: 960px) {
+    .main,
+    .withRightPanel {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .sidebarBackdrop {
+        display: block;
+        position: absolute;
+        inset: 0;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        background: rgba(15, 19, 22, 0.52);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+        z-index: 11;
+    }
+
+    .sidebarOpen .sidebarBackdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebarBackdrop {
+        transition: none;
+    }
+}
