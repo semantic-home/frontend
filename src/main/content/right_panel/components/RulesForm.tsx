@@ -664,6 +664,7 @@ export function RulesForm({controllerId, onRuleSaved, refreshTokenFromSkipNext}:
                         triggerClassName={styles.previewTrigger}
                         popoverClassName={styles.previewPopover}
                         arrowClassName={styles.previewPopoverArrow}
+                        placement="top"
                         trigger={(
                             <>
                                 <CircleHelp className={joinClassNames(iconStyles.icon, styles.previewTriggerIcon)} aria-hidden="true"/>
@@ -691,7 +692,7 @@ export function RulesForm({controllerId, onRuleSaved, refreshTokenFromSkipNext}:
 
                         {previewDecision && (
                             <div className={styles.previewReason}>
-                                Reason: {previewDecision.reason_code}
+                                Status/Reason: {previewDecision.reason_code}
                                 {previewDecision.effective_seconds !== null ? ` · Effective duration: ${previewDecision.effective_seconds}s` : ""}
                             </div>
                         )}

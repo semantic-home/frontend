@@ -8,18 +8,8 @@
   background: transparent;
 }
 
-.logo {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  padding: 0 var(--gap);
-}
-
-.logoImage {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-  padding: 0;
+.logoContainer {
+  padding-left: 12px;
 }
 
 .domainMenu {

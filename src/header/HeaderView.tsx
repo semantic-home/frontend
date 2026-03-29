@@ -1,4 +1,5 @@
 import styles from "./HeaderView.module.css"
+import logoStyles from "../styles/Logo.module.css"
 import buttonStyles from "../styles/Button.module.css"
 import logo from "../assets/logo_grau.png";
 import {joinClassNames} from "../utils/classNames.ts";
@@ -20,8 +21,10 @@ export function HeaderView(
 ) {
     return (
         <header className={styles.header}>
-            <div className={styles.logo}>
-                <img src={logo} className={styles.logoImage} alt="Semantic Home"/>
+            <div className={styles.logoContainer}>
+                <div className={logoStyles.logo}>
+                    <img src={logo} className={logoStyles.logoImage} alt="Semantic Home"/>
+                </div>
             </div>
             <button
                 type="button"

@@ -14,7 +14,7 @@ type TerminalLine = {
 const TERMINAL_LINES: TerminalLine[] = [
     {
         prompt: true,
-        text: 'export HA_URL="http://homeassistant.local:8123"',
+        text: 'export HA_URL="http://your.homeassistant.host:8123"',
     },
     {
         prompt: true,

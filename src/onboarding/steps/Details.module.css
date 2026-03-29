@@ -308,7 +308,8 @@
     padding: 12px;
     background: var(--surface);
     min-width: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     container-type: inline-size;
 }
 

@@ -383,7 +383,7 @@ select.formField {
 
 .detailsPopover {
     min-width: 0;
-    width: min(360px, calc(100vw - 64px));
+    width: min(400px, calc(100vw - 64px));
     max-width: calc(100vw - 64px);
     box-sizing: border-box;
     display: flex;

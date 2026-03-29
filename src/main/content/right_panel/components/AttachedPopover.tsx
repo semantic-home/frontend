@@ -12,6 +12,7 @@ type AttachedPopoverProps = {
     popoverClassName?: string
     arrowClassName?: string
     showArrow?: boolean
+    placement?: "bottom" | "top"
 }
 
 
@@ -24,6 +25,7 @@ export function AttachedPopover({
     popoverClassName,
     arrowClassName,
     showArrow = true,
+    placement = "bottom",
 }: AttachedPopoverProps) {
     const [isOpen, setIsOpen] = useState(false)
     const anchorRef = useRef<HTMLDivElement | null>(null)
@@ -70,7 +72,12 @@ export function AttachedPopover({
             </button>
 
             {isOpen && (
-                <div className={joinClassNames(styles.popover, popoverClassName)} role="dialog" aria-label={dialogAriaLabel}>
+                <div
+                    className={joinClassNames(styles.popover, popoverClassName)}
+                    data-placement={placement}
+                    role="dialog"
+                    aria-label={dialogAriaLabel}
+                >
                     {showArrow && (
                         <div className={joinClassNames(styles.arrow, arrowClassName)} aria-hidden="true"/>
                     )}
