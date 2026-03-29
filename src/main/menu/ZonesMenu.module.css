@@ -2,6 +2,7 @@
     grid-column: 1;
     grid-row: 1;
     min-width: 0;
+    background: color-mix(in srgb, var(--surface) 92%, black 8%);
 }
 
 .zonesMenuHeader {

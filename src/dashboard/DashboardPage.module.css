@@ -2,7 +2,7 @@
     position: relative;
     display: grid;
     grid-template-columns: var(--sidebar-width) 1fr;
-    grid-template-rows: 60px 1fr 40px;
+    grid-template-rows: 60px 1fr 20px;
     column-gap: 0;
     row-gap: 0;
     min-height: 100vh;
@@ -13,9 +13,11 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 1px;
-    background: var(--border);
+    left: 0;
+    width: var(--sidebar-width);
+    background: color-mix(in srgb, var(--surface) 92%, black 8%);
     pointer-events: none;
+    z-index: -1;
 }
 
 @media (max-width: 960px) {

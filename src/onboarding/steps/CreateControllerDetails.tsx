@@ -463,7 +463,7 @@ export function CreateControllerDetails(
                         </div>
                         <div className={styles.suggestionActions}>
                             {suggestion.domain !== "watering" ? (
-                                <span className={styles.muted}>Manual setup required</span>
+                                <span className={styles.muted}>This device type needs to be configured manually</span>
                             ) : created.has(suggestion.key) || suggestion.existingController !== null ? (
                                 <span className={styles.successText}>
                                     {created.has(suggestion.key)

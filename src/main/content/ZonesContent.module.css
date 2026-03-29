@@ -8,13 +8,13 @@
 
     min-width: 0;
     overflow: visible;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     border-radius: var(--radius);
     font-family: var(--font-sans);
 }
 
 .zonesContent h1 {
-    font-size: 2rem;
+    font-size: clamp(1.2rem, 5vw, 2rem);
     margin-top: 0;
     margin-bottom: 0.25rem;
 }
@@ -48,13 +48,15 @@
 .feed {
     width: min(100%, 850px);
     margin-inline: auto;
+    margin-top: calc(var(--gap) * 2);
+    margin-bottom: calc(var(--gap) * 2);
     /*padding: var(--gap);*/
     transition: transform 180ms ease;
     will-change: transform;
 }
 
 .feedCentered {
-    width: min(100%, 800px);
+    width: min(100%, 850px);
     transform: translateX(-14px);
 }
 
@@ -64,6 +66,10 @@
         grid-row: 1;
         padding-left: 16px;
         padding-right: 16px;
+    }
+
+    .feed {
+        margin-top: 0;
     }
 
     .feedCentered {

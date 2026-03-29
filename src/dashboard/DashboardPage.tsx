@@ -1,7 +1,7 @@
 import {HeaderView} from "../header/HeaderView.tsx";
 import {DOMAINS, type DomainKey} from "../header/domains.ts";
 import {MainView} from "../main/MainView.tsx";
-import {FooterView} from "../main/footer/FooterView.tsx";
+import {FooterView} from "../footer/FooterView.tsx";
 import {useEffect, useState} from "react";
 import styles from "./DashboardPage.module.css";
 
