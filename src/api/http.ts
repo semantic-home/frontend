@@ -1,4 +1,5 @@
 import {API_BASE} from "./config.ts";
+import {buildSessionHeader} from "./session.ts";
 
 export class ApiError extends Error {
     status: number
@@ -18,6 +19,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
             ...init,
             headers: {
                 Accept: "application/json",
+                ...buildSessionHeader(),
                 ...(init.headers ?? {}),
             }
         }
