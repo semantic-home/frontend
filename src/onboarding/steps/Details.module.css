@@ -1,5 +1,15 @@
 /* --- terminal (agent connect) --- */
 
+:root {
+    --terminal-prompt: #7dd3fc;
+    --terminal-success: #34d399;
+    --terminal-waiting: #60a5fa;
+    --terminal-muted: #94a3b8;
+    --terminal-notice-bg: #eaf4ff;
+    --terminal-notice-title: #1d4ed8;
+    --terminal-notice-body: #355070;
+}
+
 .terminal {
     border-radius: var(--radius);
     overflow: hidden;
@@ -44,10 +54,54 @@
     line-height: 1.6;
 }
 
-.prompt { color: #10b981; }
-.success { color: #10b981; }
-.waiting { color: #f59e0b; }
-.muted { color: #94a3b8; }
+.prompt { color: var(--terminal-prompt); }
+.success { color: var(--terminal-success); }
+.waiting { color: var(--terminal-waiting); }
+.muted { color: var(--terminal-muted); }
+
+.cursor {
+    display: inline-block;
+    margin-left: 1px;
+    color: #f8fafc;
+    animation: terminalBlink 1s steps(1, end) infinite;
+}
+
+.liveStatus {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.betaNotice {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--terminal-notice-bg);
+}
+
+.betaTitle {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--terminal-notice-title);
+}
+
+.betaBody {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--terminal-notice-body);
+}
+
+@keyframes terminalBlink {
+    50% {
+        opacity: 0;
+    }
+}
 
 /* --- shared panel (discovery, classify, controller, demo) --- */
 
@@ -137,7 +191,7 @@
 /* --- inline classification edit --- */
 
 .editSelect {
-    font-size: 12px;
+    font-size: 14px;
     padding: 2px 6px;
     border-radius: 4px;
     border: 1px solid var(--border);

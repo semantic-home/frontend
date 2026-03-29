@@ -1,4 +1,6 @@
 .list {
+    --onboarding-active-accent: #60a5fa;
+    --onboarding-complete-accent: #10b981;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -10,7 +12,8 @@
     gap: 12px;
     padding: 10px 12px;
     border-radius: var(--radius);
-    transition: opacity 0.15s;
+    background: transparent;
+    transition: opacity 0.15s ease;
 }
 
 .indicator {
@@ -22,6 +25,8 @@
     place-items: center;
     font-size: 13px;
     font-weight: 700;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-muted) 28%, transparent);
 }
 
 .info {
@@ -43,19 +48,32 @@
 
 /* --- status variants --- */
 
+.completed {
+    background: transparent;
+    box-shadow: none;
+}
+
 .completed .indicator {
-    background: var(--accent-strong);
-    color: white;
+    color: var(--onboarding-complete-accent);
+    box-shadow:
+        inset 0 0 0 2px rgb(16 185 129 / 0.82),
+        0 0 14px rgb(16 185 129 / 0.10);
 }
 
 .completed .label {
-    color: var(--text-muted);
+    color: var(--text);
+}
+
+.active {
+    background: transparent;
+    box-shadow: none;
 }
 
 .active .indicator {
-    background: var(--accent-subtle);
-    color: var(--accent-strong);
-    box-shadow: 0 0 0 2px var(--accent-strong);
+    color: var(--onboarding-active-accent);
+    box-shadow:
+        inset 0 0 0 2px rgb(96 165 250 / 0.84),
+        0 0 14px rgb(96 165 250 / 0.12);
 }
 
 .active .label {
@@ -63,7 +81,7 @@
 }
 
 .locked .indicator {
-    background: var(--surface-2);
+    background: transparent;
     color: var(--text-muted);
 }
 

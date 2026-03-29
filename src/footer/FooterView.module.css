@@ -1,0 +1,6 @@
+.footerView {
+    grid-column: -1/1;
+    grid-row: 3;
+    background: color-mix(in srgb, var(--surface) 92%, black 8%);
+    border-top: 1px solid var(--border);
+}
