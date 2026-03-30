@@ -2,6 +2,7 @@ import styles from "./OnboardingPage.module.css";
 import logoStyles from "../styles/Logo.module.css";
 import {OnboardingTutorial} from "./onboardingTutorial.tsx";
 import logo from "../assets/logo_grau.png";
+import pkg from "../../package.json";
 
 
 
@@ -14,7 +15,7 @@ export function OnboardingPage() {
                         <img src={logo} className={logoStyles.logoImage} alt="Semantic Home"/>
                     </div>
                     <h2>Semantic Home</h2>
-                    <span className={styles.version}>v0.1.0-alpha.2</span>
+                    <span className={styles.version}>v{pkg.version}</span>
                 </div>
 
                 <h1 className={styles.title}>Welcome to Semantic Home</h1>

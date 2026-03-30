@@ -24,35 +24,6 @@ docker run --rm -p 8080:8080 home-automation-frontend
 
 This confirms that the frontend image starts and serves the static app. It is not a complete end-to-end deployment because `/api/*` still expects a reachable backend service.
 
-## Recommended Alpha Deployment
-
-For the alpha environment, run frontend and backend in a shared Docker Compose stack. Compose creates a default internal network automatically, and the frontend can then reach the backend by the service name `backend`.
-
-Example `compose.yml` at the stack root:
-
-```yaml
-services:
-  backend:
-    build: ./backend
-    env_file:
-      - ./backend/.env.alpha
-    restart: unless-stopped
-
-  frontend:
-    build: ./frontend
-    depends_on:
-      - backend
-    restart: unless-stopped
-    ports:
-      - "8080:8080"
-```
-
-Start the stack from that shared root:
-
-```bash
-docker compose up -d --build
-```
-
 ## Reverse Proxy Model
 
 - Nginx serves the static frontend on port `8080`
