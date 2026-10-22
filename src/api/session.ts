@@ -29,8 +29,9 @@ export function getOrCreateTabSessionId(): string | null {
 
 export function buildSessionHeader(): HeadersInit {
     const sessionId = getOrCreateTabSessionId()
+    const household = window.localStorage.getItem("semantic-home.household")
     if (!sessionId) {
         return {}
     }
-    return {[SESSION_HEADER]: sessionId}
+    return {[SESSION_HEADER]: sessionId, ...(household ? {"X-Semantic-Home-Household": household} : {})}
 }

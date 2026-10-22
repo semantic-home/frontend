@@ -1,3 +1,6 @@
+import type {DomainKey} from "../../../header/domains.ts";
+import type {ZoneMenuEntry} from "../../MainView.tsx";
+import {ControllerPanel} from "../../../workspace/Controllers.tsx";
 import {useEffect} from "react";
 import styles from "./RightPanel.module.css"
 import type {RightPanelState} from "../../MainView.tsx";
@@ -5,6 +8,7 @@ import {RulesForm} from "./components/RulesForm.tsx";
 import {CreateControllerForm} from "./components/CreateControllerForm.tsx";
 
 type RightPanelProps = {
+    activeDomain: DomainKey; activeZone: string; zones: ZoneMenuEntry[]; revision: number;
     isRightPanelOpen: boolean,
     closeRightPanel: () => void,
     rightPanel: RightPanelState,
@@ -15,6 +19,7 @@ type RightPanelProps = {
 
 export function RightPanel(
     {
+        activeDomain, activeZone, zones, revision,
         isRightPanelOpen,
         closeRightPanel,
         rightPanel,
@@ -48,7 +53,7 @@ export function RightPanel(
             ? "Edit Controller"
             : "Edit Rules"
     const subtitle = rightPanel.mode === "edit_rule"
-        ? rightPanel.controllerId
+        ? zones.find(zone => zone.key === activeZone)?.value
         : rightPanel.mode === "create_controller" || rightPanel.mode === "edit_controller"
             ? rightPanel.zoneLabel
             : null
@@ -81,7 +86,11 @@ export function RightPanel(
                     </button>
                 </div>
                 <div className={styles.rightPanelBody}>
-                    {rightPanel.mode === "edit_rule" && (
+                    {activeDomain !== "watering" ? <ControllerPanel key={`${rightPanel.mode}-${rightPanel.mode === "edit_rule" || rightPanel.mode === "edit_controller" ? rightPanel.controllerId : "new"}`}
+                        domain={activeDomain} zoneId={activeZone} zones={zones} revision={revision}
+                        controllerId={rightPanel.mode === "edit_rule" || rightPanel.mode === "edit_controller" ? rightPanel.controllerId : undefined}
+                        showRules={rightPanel.mode === "edit_rule"} saved={onControllerCreated} close={closeRightPanel}/>
+                    : <>{rightPanel.mode === "edit_rule" && (
                         <RulesForm
                             key={rightPanel.controllerId}
                             controllerId={rightPanel.controllerId}
@@ -110,6 +119,7 @@ export function RightPanel(
                             }}
                         />
                     )}
+                    </>}
                 </div>
             </aside>
         </div>

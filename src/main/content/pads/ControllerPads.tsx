@@ -11,6 +11,7 @@ import type {UiRuntimeStatus} from "../../../api/statusTypes.ts";
 import type {RightPanelState, ZoneKey} from "../../MainView.tsx";
 import {Plus} from "lucide-react";
 import {joinClassNames} from "../../../utils/classNames.ts";
+import {ControllerEmptyState} from "./components/ControllerEmptyState.tsx";
 
 
 export function ControllerPads(
@@ -28,7 +29,9 @@ export function ControllerPads(
         closeRightPanel,
         onControllerAction,
         onCreateController,
-        onEditController
+        onEditController,
+        loading = false,
+        error
 
 }: {
     controllers: ControllerViewBase[],
@@ -45,6 +48,8 @@ export function ControllerPads(
     onControllerAction: (controllerId: string) => void,
     onCreateController: (zoneId: ZoneKey, activeZone: string) => void
     onEditController: (controllerId: string, zoneId: ZoneKey, zoneLabel: string) => void
+    loading?: boolean
+    error?: string
 }) {
 
     const handleCreateController = () => {
@@ -82,7 +87,10 @@ export function ControllerPads(
                 )}
             </div>
 
-            <div className={styles.padList}>
+            {loading && <p role="status">Loading controllers …</p>}
+            {error && <p role="alert">{error}</p>}
+            {!loading && !error && controllers.length === 0 && <ControllerEmptyState/>}
+            {!loading && !error && <div className={styles.padList}>
                 {controllers.map((controller) => {
                     return (
                         <div
@@ -121,7 +129,7 @@ export function ControllerPads(
                         </div>
                     )
                 })}
-            </div>
+            </div>}
         </div>
     )
 

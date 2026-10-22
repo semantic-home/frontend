@@ -14,14 +14,14 @@ const STATUS_META: Record<UiRuntimeStatus, { variant: string; label: string }> =
     UNKNOWN: { variant: "unknown", label: "Unknown" },
 };
 
-export function StatusLight({ status }: { status: UiRuntimeStatus }) {
+export function StatusLight({ status, label }: { status: UiRuntimeStatus; label?: string }) {
     const meta = STATUS_META[status] ?? STATUS_META.UNKNOWN;
     const className = `${styles.statusLight} ${styles[meta.variant]}`;  // link to CSS
 
     return <span
         className={className}
         role="status"
-        aria-label={meta.label}
-        data-tooltip={meta.label}
+        aria-label={label || meta.label}
+        data-tooltip={label || meta.label}
     />;
 }

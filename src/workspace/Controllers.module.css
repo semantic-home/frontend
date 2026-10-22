@@ -1,0 +1,19 @@
+.cardHeader {display: flex; align-items: center; gap: 14px; flex-wrap: wrap;}
+.cardHeader h2 {font-size: 20px; font-weight: 500; flex: 1; margin: 0;}
+.icon {display: inline-grid; place-items: center; background: var(--surface); padding: 12px; border-radius: 12px;}
+.meaning {margin: 0; color: var(--text-muted); line-height: 1.7;}
+.roles {display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin: 10px 0;}
+.roles > div {display: grid; align-content: start; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 9px; padding: 13px; overflow-wrap: anywhere;}
+.ruleSummary {border-top: 1px solid var(--border);}
+.ruleSummary p {line-height: 1.7; margin-bottom: 0;}
+.panel {padding: 0; margin: 0; font-size: 14px; color: var(--text);}
+.panel :global(section) {padding: 14px; margin: 12px 0;}
+.panel :global(fieldset) {min-width: 0;}
+.panel :global(h2) {font-size: 18px;}
+.panel :global(form) {margin-top: 16px;}
+.entityFields {display: grid; gap: 24px; padding: 0; margin: 0; border: 0;}
+.entityFields legend {font-size: 16px; font-weight: 600; padding: 12px 0;}
+@container (max-width: 500px) {
+    .panel [class*="split"] {grid-template-columns: 1fr;}
+    .panel [class*="grid"] {grid-template-columns: 1fr;}
+}

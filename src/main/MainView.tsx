@@ -2,20 +2,18 @@ import styles from "./MainView.module.css"
 import {ZonesMenu} from "./menu/ZonesMenu";
 import {ZonesContent} from "./content/ZonesContent";
 import type {DomainKey} from "../header/domains.ts";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import {httpGet} from "../api/http.ts";
+import {useSearchParams} from "react-router-dom";
+import {ControllerZone} from "../workspace/Controllers.tsx";
 import {RightPanel} from "./content/right_panel/RightPanel.tsx";
+import {displayZone} from "../workspace/shared.ts";
 
-export type ZoneKey = "living_room" | "bedroom" | "kitchen_watering" | "kitchen_power" | "kitchen_surveillance" | "bathroom" |
-    "relax" | "bright" | "sunset" | "sunrise" | "home_office";
+export type ZoneKey = string;
 
 export type ZoneMenuEntry = {
     key: ZoneKey,
     value: string
-}
-
-type ZonesDomainEntry = {
-    key: DomainKey,
-    value: Array<ZoneMenuEntry>,
 }
 
 export type RightPanelState =
@@ -23,40 +21,6 @@ export type RightPanelState =
     | { mode: "edit_rule"; controllerId: string }
     | { mode: "create_controller"; zoneId: ZoneKey; zoneLabel: string }
     | { mode: "edit_controller"; controllerId: string; zoneId: ZoneKey; zoneLabel: string };
-
-const ZONES: Array<ZonesDomainEntry> = [
-    {
-        key: "watering", value: [
-            {key: "living_room", value: "Living Room"},
-            {key: "bedroom", value: "Bedroom"},
-            {key: "kitchen_watering", value: "Kitchen"}
-        ]
-    },
-    {
-        key: "lighting", value: [
-            {key: "relax", value: "Relax"},
-            {key: "bright", value: "Bright"},
-            {key: "sunset", value: "Sunset"},
-            {key: "sunrise", value: "Sunrise"}
-        ]
-    },
-    {
-        key: "power", value: [
-            {key: "home_office", value: "Home Office"},
-            {key: "kitchen_power", value: "Kitchen"},
-            {key: "bedroom", value: "Bedroom"}
-
-        ]
-    },
-    {
-        key: "surveillance", value: [
-            {key: "living_room", value: "Living Room"},
-            {key: "kitchen_surveillance", value: "Kitchen"},
-            {key: "bedroom", value: "Bedroom"},
-            {key: "bathroom", value: "Bathroom"}
-        ]
-    }
-]
 
 export function MainView(
     {
@@ -69,17 +33,30 @@ export function MainView(
         closeSidebar: () => void
     }
 ) {
-    const [activeZone, setActiveZone] = useState<ZoneKey>(() => (
-        ZONES.find((item) => item.key === activeDomain)?.value[0]?.key ?? ZONES[0].value[0].key
-    ))
-    const selectedZonesMenu: ZonesDomainEntry | undefined =  ZONES.find(
-        item => item.key === activeDomain
-    )
-    const zones = selectedZonesMenu?.value ?? [];
-    const [rightPanel, setRightPanel] = useState<RightPanelState>({ mode: "closed" });
+    const [params, setParams] = useSearchParams();
+    const [zones, setZones] = useState<ZoneMenuEntry[]>([])
+    const activeZone = zones.some(zone => zone.key === params.get("zone")) ? params.get("zone")! : zones[0]?.key || "unassigned";
+    const [creating, setCreating] = useState<Extract<RightPanelState, {mode: "create_controller"}> | null>(null);
+    const rightPanel: RightPanelState = creating || (params.get("controller") ? params.get("panel") === "rules"
+        ? {mode: "edit_rule", controllerId: params.get("controller")!}
+        : {mode: "edit_controller", controllerId: params.get("controller")!, zoneId: activeZone, zoneLabel: zones.find(zone => zone.key === activeZone)?.value || activeZone}
+        : {mode: "closed"});
+    const [zoneError, setZoneError] = useState("");
     const [padsRefreshToken, setPadsRefreshToken] = useState(0)
 
     const [refreshTokenFromSkipNext, setRefreshTokenFromSkipNext] = useState<number>(0);
+
+    useEffect(() => {
+        let alive = true
+        void httpGet<{id: string; name: string}[]>("/rooms").then(rooms => {
+            if (!alive) return
+            const entries = rooms.map(room => ({key: room.id, value: displayZone(room.id, room.name)}))
+            setZones(entries)
+            setZoneError("")
+        }).catch(() => {if (alive) setZoneError("Could not load zones.")})
+        return () => {alive = false}
+    }, [activeDomain, padsRefreshToken])
+
 
     const refreshSkipNextToken = () => {
         setRefreshTokenFromSkipNext((prev) => {
@@ -88,24 +65,35 @@ export function MainView(
     }
 
     const isRightPanelOpen = rightPanel.mode !== "closed";
+    const rememberPanel = (controllerId?: string, panel?: string) => {
+        const next = new URLSearchParams(params);
+        next.set("zone", activeZone);
+        if (controllerId) {next.set("controller", controllerId); next.set("panel", panel || "entities")}
+        else {next.delete("controller"); next.delete("panel")}
+        setParams(next, {replace: true});
+    };
     const openEditRulePanel = (controllerId: string) => {
-        setRightPanel({mode: "edit_rule", controllerId});
+        setCreating(null);
+        rememberPanel(controllerId, "rules");
     };
     const openCreateControllerPanel = (zoneId: ZoneKey, zoneLabel: string) => {
-        setRightPanel({mode: "create_controller", zoneId, zoneLabel});
+        setCreating({mode: "create_controller", zoneId, zoneLabel});
     };
-    const openEditControllerPanel = (controllerId: string, zoneId: ZoneKey, zoneLabel: string) => {
-        setRightPanel({mode: "edit_controller", controllerId, zoneId, zoneLabel});
+    const openEditControllerPanel = (controllerId: string) => {
+        setCreating(null);
+        rememberPanel(controllerId);
     };
     const closeRightPanel = () => {
-        setRightPanel({mode: "closed"});
+        setCreating(null);
+        rememberPanel();
     };
     const refreshPadSemantics = () => {
         setPadsRefreshToken((currentToken) => currentToken + 1)
     };
 
     const handleZoneChange = (zoneKey: ZoneKey) => {
-        setActiveZone(zoneKey);
+        setCreating(null);
+        const next = new URLSearchParams(params); next.set("zone", zoneKey); next.delete("controller"); next.delete("panel"); setParams(next);
         closeSidebar();
     };
 
@@ -126,8 +114,13 @@ export function MainView(
                 zones={zones}
                 onChange={handleZoneChange}
                 isOpen={isSidebarOpen}
+                onZoneCreated={(id) => {setPadsRefreshToken(n => n + 1); handleZoneChange(id)}}
             />
-            < ZonesContent
+            {zoneError && <p role="alert">{zoneError}</p>}
+            {activeDomain !== "watering" ? <ControllerZone domain={activeDomain} zoneId={activeZone} zoneName={zones.find(z => z.key === activeZone)?.value || activeZone} revision={padsRefreshToken}
+                create={() => openCreateControllerPanel(activeZone, zones.find(z => z.key === activeZone)?.value || activeZone)}
+                open={(id, rules) => rules ? openEditRulePanel(id) : openEditControllerPanel(id)}/>
+            : < ZonesContent
                 activeDomain={activeDomain}
                 activeZone={activeZone}
                 zones={zones}
@@ -139,8 +132,12 @@ export function MainView(
                 rightPanel={rightPanel}
                 closeRightPanel={closeRightPanel}
                 refreshSkipNextToken={refreshSkipNextToken}
-            />
+            />}
             < RightPanel
+                activeDomain={activeDomain}
+                activeZone={activeZone}
+                zones={zones}
+                revision={padsRefreshToken}
                 isRightPanelOpen={isRightPanelOpen}
                 closeRightPanel={closeRightPanel}
                 rightPanel={rightPanel}

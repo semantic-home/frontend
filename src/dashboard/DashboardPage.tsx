@@ -3,11 +3,15 @@ import {DOMAINS, type DomainKey} from "../header/domains.ts";
 import {MainView} from "../main/MainView.tsx";
 import {FooterView} from "../footer/FooterView.tsx";
 import {useEffect, useState} from "react";
+import type {ReactNode} from "react";
+import {useSearchParams} from "react-router-dom";
 import styles from "./DashboardPage.module.css";
 
 
-export function DashboardPage() {
-    const [activeDomain, setActiveDomain] = useState<DomainKey>(DOMAINS[0].key);
+export function DashboardPage({tools}: {tools?: ReactNode}) {
+    const [params, setParams] = useSearchParams();
+    const activeDomain: DomainKey = DOMAINS.find(d => d.key === params.get("domain"))?.key || DOMAINS[0].key;
+    const setActiveDomain = (domain: DomainKey) => setParams({domain, ...(params.get("zone") ? {zone: params.get("zone")!} : {})});
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
@@ -60,6 +64,7 @@ export function DashboardPage() {
             data-sidebar-open={isSidebarOpen ? "true" : "false"}
         >
             <HeaderView
+                tools={tools}
                 active={activeDomain}
                 onSelect={handleDomainSelect}
                 isSidebarOpen={isSidebarOpen}

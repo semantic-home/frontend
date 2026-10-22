@@ -17,6 +17,7 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     const res = await fetch(
         `${API_BASE}${path}`, {
             ...init,
+            credentials: "same-origin",
             headers: {
                 Accept: "application/json",
                 ...buildSessionHeader(),
@@ -26,12 +27,13 @@ async function request<T>(path: string, init: RequestInit): Promise<T> {
     )
     if (!res.ok) {
         let detail: unknown = null;
+        const raw = await res.text()
         try {
-            const data = await res.json()
+            const data = JSON.parse(raw)
             detail = data.detail ?? data
 
         } catch {
-            detail = await res.text()
+            detail = raw
         }
         throw new ApiError(res.status, detail)
     }

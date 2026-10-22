@@ -81,3 +81,7 @@
         transition: none;
     }
 }
+
+.zoneCreate {padding: 16px; display: grid; gap: 12px;}
+.zoneCreate form, .zoneCreate label {display: grid; gap: 10px;}
+.zoneCreate input {min-width: 0; width: 100%; box-sizing: border-box; padding: 8px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 6px;}

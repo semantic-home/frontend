@@ -15,6 +15,7 @@ import type {
 import {useEffect, useEffectEvent, useState} from "react";
 import type {UiRuntimeStatus} from "../../api/statusTypes.ts";
 import {mapDomainModeToUiStatus} from "../../api/statusMappers.ts";
+import {errorText} from "../../workspace/shared.ts";
 
 const WHY_WARNING_REASON_CODES = new Set([
     "condition_source_missing",
@@ -122,6 +123,8 @@ export function ZonesContent(
 ) {
 
     const [controllers, setControllers] = useState<ControllerViewBase[]>([])
+    const loadKey = `${activeDomain}/${activeZone}/${refreshToken}`
+    const [controllerLoad, setControllerLoad] = useState<{key: string; error?: string}>()
     const [whyRecords, setWhyRecords] = useState<Record<string, WhyViewBase>>({})
     const [nextRecords, setNextRecords] = useState<Record<string, WateringNextView>>({})
     const [statusLights, setStatusLights] = useState<Record<string, UiRuntimeStatus>>({});
@@ -298,14 +301,19 @@ export function ZonesContent(
     }
 
     useEffect(() => {
+        let alive = true;
         (async () => {
             let data: ControllerViewBase[] = []
             try {
                 const raw: unknown[] = await makeControllersApi(activeDomain, activeZone).list();
+                if (!alive) return
                 data = raw as ControllerViewBase[];
                 setControllers(data); // Render #2
+                setControllerLoad({key: loadKey})
             } catch (err) {
+                if (!alive) return
                 console.log(err);
+                setControllerLoad({key: loadKey, error: errorText(err)})
                 setControllers([]);
                 setWhyRecords({});
                 setNextRecords({});
@@ -315,7 +323,8 @@ export function ZonesContent(
 
             await refreshPadSemantics(data)
         })();
-    }, [activeDomain, activeZone, refreshToken]);
+        return () => {alive = false}
+    }, [activeDomain, activeZone, refreshToken, loadKey]);
 
     useEffect(() => {
         let cancelled = false;
@@ -378,6 +387,8 @@ export function ZonesContent(
                     </div>
                 </div>
                 <ControllerPads
+                    loading={controllerLoad?.key !== loadKey}
+                    error={controllerLoad?.key === loadKey ? controllerLoad.error : undefined}
                     controllers={controllers}
                     whyRecords={whyRecords}
                     nextRecords={nextRecords}

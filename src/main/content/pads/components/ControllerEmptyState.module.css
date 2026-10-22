@@ -1,0 +1,12 @@
+.empty {
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 40px 24px;
+    margin-block: 12px;
+    text-align: center;
+    line-height: 1.7;
+    color: var(--text-muted);
+}
+
+.empty p {margin: 0;}
+.empty p:first-child {color: var(--text);}

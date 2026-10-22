@@ -1,0 +1,34 @@
+.tools {display: flex; align-items: center; gap: 14px; min-width: 0;}
+.agentLink {display: inline-flex; align-items: center; gap: 9px; min-height: 38px; padding: 0 10px; border: 1px solid var(--border); border-radius: 20px; color: var(--text-muted); text-decoration: none; font-size: 12px; white-space: nowrap;}
+.agentLink:hover {background: var(--btn-hover-bg); color: var(--text);}
+.agentLink [data-tooltip]::after {top: calc(100% + 10px); bottom: auto;}
+.account {position: relative;}
+.accountButton {display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 4px 6px; color: var(--text); border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; font: inherit; cursor: pointer;}
+.accountButton:hover, .accountButton[aria-expanded=true] {background: var(--btn-hover-bg); border-color: var(--border);}
+.avatar {display: inline-grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--accent-strong); font-size: 11px; font-weight: 650; letter-spacing: .5px;}
+.accountName {max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;}
+.chevron {color: var(--text-muted);}
+.dropdown {position: absolute; z-index: 40; right: 0; top: calc(100% + 12px); width: min(330px, calc(100vw - 24px)); box-sizing: border-box; max-height: calc(100dvh - 84px); overflow-y: auto; padding: 8px; border: 1px solid var(--border-strong); border-radius: 12px; background: var(--surface); box-shadow: 0 16px 48px rgb(0 0 0 / .35); color: var(--text); font-size: 13px;}
+.identity {display: flex; align-items: center; gap: 10px; padding: 12px 8px 16px; border-bottom: 1px solid var(--border);}
+.identity > div {display: grid; gap: 4px; min-width: 0;}
+.identity strong, .identity span {overflow-wrap: anywhere;}
+.identity > div > span {font-size: 12px; color: var(--text-muted);}
+.close {margin-left: auto; align-self: flex-start; display: inline-grid; place-items: center; padding: 3px; border: 0; color: var(--text-muted); background: transparent; cursor: pointer;}
+.homeSection {display: grid; gap: 9px; padding: 16px 8px 8px;}
+.homeSection label {font-size: 11px; font-weight: 600; letter-spacing: .4px; color: var(--text-muted);}
+.homeSection select {width: 100%; min-width: 0; box-sizing: border-box; padding: 9px; background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 7px; font: inherit;}
+.navigation {display: grid; padding: 8px 0; border-block: 1px solid var(--border);}
+.menuItem {display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; min-height: 38px; padding: 9px 10px; text-align: left; text-decoration: none; font: inherit; color: var(--text); background: transparent; border: 0; border-radius: 6px; cursor: pointer;}
+.menuItem:hover, .menuItem[aria-current=page] {background: var(--btn-hover-bg);}
+.menuItem svg {flex-shrink: 0; color: var(--text-muted);}
+.menuItem:disabled {opacity: .5; cursor: wait;}
+.details {padding: 14px 8px; color: var(--text-muted); font-size: 12px; line-height: 1.6;}
+.details summary {cursor: pointer; color: var(--text); font-size: 13px;}
+.details > span {display: block; margin-top: 12px;}
+.details code {display: block; padding: 8px 0; overflow-wrap: anywhere; user-select: all;}
+.details p {margin: 6px 0 0;}
+.signOut {border-top: 1px solid var(--border); padding-top: 6px;}
+.error {padding: 10px; color: #efaea5; line-height: 1.6;}
+.tools :focus-visible {outline: 2px solid var(--focus-ring); outline-offset: 3px;}
+@media(max-width: 1120px) {.accountName {display: none;} .tools {gap: 6px;}}
+@media(max-width: 560px) {.agentLabel {display: none;} .agentLink {min-width: 30px; min-height: 34px; padding: 0; justify-content: center;} .accountButton {gap: 4px;} .tools {gap: 8px;}}

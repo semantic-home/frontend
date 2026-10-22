@@ -1,3 +1,7 @@
+import {useState} from "react";
+import {httpPost} from "../../api/http.ts";
+import {errorText} from "../../workspace/shared.ts";
+import {useHousehold} from "../../workspace/household.ts";
 import styles from "./ZonesMenu.module.css"
 import iconStyles from "./../../styles/Icon.module.css"
 import buttonStyles from "../../styles/Button.module.css"
@@ -35,17 +39,23 @@ const ZONE_ICON: Record<ZoneKey, LucideIcon> = {
 
 
 export function ZonesMenu(
-    {activeDomain, activeZone, zones, onChange, isOpen}:
+    {activeDomain, activeZone, zones, onChange, isOpen, onZoneCreated}:
     {
         activeDomain: DomainKey,
         activeZone: ZoneKey,
         zones: ZoneMenuEntry[],
         onChange: (k: ZoneKey) => void,
         isOpen: boolean
+        onZoneCreated: (id: string) => void
     }
 ) {
 
 
+    const home = useHousehold();
+    const [adding, setAdding] = useState(false);
+    const [name, setName] = useState("");
+    const [error, setError] = useState("");
+    const [busy, setBusy] = useState(false);
     return (
         <aside
             id="dashboard-zones-menu"
@@ -59,7 +69,7 @@ export function ZonesMenu(
             <nav className={styles.zonesNav}>
                 {
                     zones.map((item) => {
-                        const Icon: LucideIcon = ZONE_ICON[item.key]
+                        const Icon: LucideIcon = ZONE_ICON[item.key] || Home
                         return (
                             <button
                                 key={item.key}
@@ -80,6 +90,13 @@ export function ZonesMenu(
                 }
 
             </nav>
+            {home.role !== "viewer" && <div className={styles.zoneCreate}>
+                <button className={buttonStyles.button} onClick={() => setAdding(!adding)}>+ Add Zone</button>
+                {adding && <form onSubmit={e => {e.preventDefault(); setBusy(true); void httpPost<{id: string}>("/zones", {name}).then(zone => {setAdding(false); setName(""); setError(""); onZoneCreated(zone.id)}).catch(e => setError(errorText(e))).finally(() => setBusy(false))}}>
+                    <label>Zone name<input required maxLength={100} value={name} onChange={e => setName(e.target.value)}/></label><button className={buttonStyles.button} disabled={busy}>Create Zone</button>
+                </form>}{error && <p role="alert">{error}</p>}
+            </div>}
+
         </aside>
     )
 }

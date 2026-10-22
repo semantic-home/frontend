@@ -63,7 +63,7 @@ const WATERING_AREA_HINTS_BY_ZONE: Partial<Record<ZoneKey, string[]>> = {
 }
 
 function zoneHintsFor(zoneId: ZoneKey): string[] {
-    return WATERING_AREA_HINTS_BY_ZONE[zoneId] ?? []
+    return WATERING_AREA_HINTS_BY_ZONE[zoneId] ?? [zoneId]
 }
 
 function compareEntityOptions(left: EntityClassificationView, right: EntityClassificationView, zoneId: ZoneKey): number {
