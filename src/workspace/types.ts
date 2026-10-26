@@ -9,7 +9,7 @@ export type Device = {
 export type DevicePage = {items: Device[]; total: number; offset: number; limit: number; areas: {id: string; name: string | null}[]}
 export type DawnPhase = "astronomical" | "nautical" | "civil" | "daylight"
 export type LightLevel = {brightness_pct: number; kelvin: number}
-export type DawnRamp = {start_at: string; stop_at: string; off_at_end: boolean; startup_minutes: number; initial_brightness_pct: number; color_mode: "white" | "brightness"} & Record<DawnPhase, LightLevel>
+export type DawnRamp = {direction?: "dawn" | "dusk"; start_at: string; stop_at: string; off_at_end: boolean; startup_minutes: number; initial_brightness_pct: number; color_mode: "white" | "brightness"} & Record<DawnPhase, LightLevel>
 export type Spec = {
     name: string; kind: "humidity_band" | "time_window" | "cleaning" | "lighting_ramp"; targets: string[];
     sensor_id: string | null; sensor_ids?: string[]; lower: number; upper: number; weekdays: number[];

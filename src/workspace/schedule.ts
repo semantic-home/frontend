@@ -11,7 +11,7 @@ export function timingText(spec: Spec, edge: ScheduleEdge) {
 
 export function rampText(spec: Spec) {
     const ramp = spec.ramp
-    return ramp ? `Dim start at ${ramp.start_at} · Follow natural dawn · ${ramp.off_at_end ? "Off" : "Stop adjusting"} at ${ramp.stop_at}` : "Natural dawn ramp"
+    return ramp ? `${ramp.direction === "dusk" ? `Start at ${ramp.initial_brightness_pct}%` : "Dim start"} at ${ramp.start_at} · Follow natural ${ramp.direction || "dawn"} · ${ramp.off_at_end ? "Off" : "Stop adjusting"} at ${ramp.stop_at}` : "Natural lighting ramp"
 }
 
 export function humidityText(spec: Spec) {
