@@ -43,4 +43,19 @@
 .pager {display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0;}
 .code {white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); padding: 18px; border-radius: 10px; font-size: 13px; line-height: 1.7;}
 .sr {position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;}
+.timingPoint {border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: grid; gap: 16px; min-width: 0; margin: 0;}
+.timingPoint legend {padding: 0 6px; font-weight: 600;}
+.timingPoint legend svg {vertical-align: middle; color: var(--accent-strong);}
+.solarPreview {border: 1px solid var(--border-strong); border-radius: 12px; padding: 20px; background: var(--surface-2); min-width: 0;}
+.solarPreview > .row {margin-top: 0;}
+.sunTimes {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;}
+.sunTimes > div {display: flex; align-items: center; gap: 10px; background: var(--surface); border-radius: 10px; padding: 14px;}
+.sunTimes svg {color: var(--accent-strong); flex-shrink: 0;}
+.sunTimes span {display: grid; gap: 5px; font-size: 13px;}
+.sunTimes strong {font-size: 17px;}
+.solarEvents {padding: 0; margin: 0; list-style: none;}
+.solarEvents li {display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border);}
+.solarEvents li:last-child {border: 0;}
+.solarEvents li > span:last-child {display: grid; gap: 4px;}
+.solarEvents .badge {min-width: 30px; text-align: center;}
 @media(max-width: 640px) {.split {grid-template-columns: 1fr;} .templates button {min-width: 0; font-size: 13px; padding: 10px 8px; overflow-wrap: anywhere;} .templates small {display: none;} .card {padding: 18px;}}

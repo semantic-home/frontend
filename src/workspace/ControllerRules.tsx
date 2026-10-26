@@ -4,10 +4,12 @@ import {httpDelete, httpGet, httpPost, httpPut} from "../api/http.ts"
 import type {Activity, Automation, Connection, Device, DevicePage, Home, Preview, Spec, SemanticController} from "./types.ts"
 import {displayZone, errorText, messageOf, nameOf, useLoad} from "./shared.ts"
 import {Pager} from "./Pager.tsx"
+import {LocalTimePreview, TimingPoint} from "./SolarSchedule.tsx"
+import {timingText, usesSun} from "./schedule.ts"
 import s from "./Workspace.module.css"
 const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const status: Record<string, string> = {draft: "Draft", pending: "Awaiting confirmation", active: "Active", paused: "Paused", error: "Deployment failed"}
-const reasons: Record<string, string> = {upper_threshold: "Upper threshold reached", lower_threshold: "Lower threshold reached", keep_state: "Keep the current state between thresholds", sensor_unavailable: "Measurement missing or stale", outside_window: "Outside the active time window", time_window: "Time window evaluated"}
+const reasons: Record<string, string> = {upper_threshold: "Upper threshold reached", lower_threshold: "Lower threshold reached", keep_state: "Keep the current state between thresholds", sensor_unavailable: "Measurement missing or stale", outside_window: "Outside the active time window", time_window: "Time window evaluated", solar_schedule: "Runs at the scheduled sun or clock event"}
 export function DevicePicker({capability, selected, change, multiple = true, agentId, title, zoneId}: {capability: string; selected: string[]; change: (ids: string[]) => void; multiple?: boolean; agentId?: string; title?: string; zoneId?: string}) {
     const [expanded, setExpanded] = useState(selected.length === 0)
     const [query, setQuery] = useState("")
@@ -36,7 +38,8 @@ export function DevicePicker({capability, selected, change, multiple = true, age
 }
 
 const initialSpec: Spec = {name: "", kind: "humidity_band", targets: [], sensor_id: null, sensor_ids: [], lower: 52, upper: 55, weekdays: [0,1,2,3,4,5,6],
-    start: null, end: null, at: "10:00", min_cycle_seconds: 180, sensor_stale_seconds: 1800, brightness_pct: null, enabled: true}
+    start: null, end: null, start_event: "time", end_event: "time", start_offset_minutes: 0, end_offset_minutes: 0,
+    at: "10:00", min_cycle_seconds: 180, sensor_stale_seconds: 1800, brightness_pct: null, enabled: true}
 
 function RuleEditor({home, controller, rule, done, cancel}: {home: Home; controller: SemanticController; rule: Automation | null; done: () => void; cancel: () => void}) {
     const [spec, setSpec] = useState<Spec>(rule ? {...rule.spec} : {...initialSpec, name: `${controller.display_name} · Rule`.slice(0, 100), kind: controller.domain === "humidity" ? "humidity_band" : controller.domain === "cleaning" ? "cleaning" : "time_window", ...controller.bindings, ...(controller.domain === "lighting" || controller.domain === "power" ? {start: "08:00", end: "22:00"} : {})})
@@ -44,9 +47,12 @@ function RuleEditor({home, controller, rule, done, cancel}: {home: Home; control
     const [error, setError] = useState("")
     const [busy, setBusy] = useState(false)
     const sensorCount = spec.sensor_ids?.length || (spec.sensor_id ? 1 : 0)
+    const solar = usesSun(spec)
     function update(patch: Partial<Spec>) {setSpec(old => ({...old, ...patch})); setPreview(null); setError("")}
-    const valid = spec.name.trim() && spec.targets.length && spec.weekdays.length && (spec.kind !== "humidity_band" || (sensorCount && spec.lower < spec.upper)) &&
-        (spec.kind !== "time_window" || (spec.start && spec.end)) && (!!spec.start === !!spec.end) && (!spec.start || spec.start !== spec.end)
+    const timingValid = solar ? (["start", "end"] as const).every(edge => (spec[`${edge}_event`] || "time") !== "time" || !!spec[edge]) &&
+        timingText(spec, "start") !== timingText(spec, "end") && (["start", "end"] as const).every(edge => Number.isInteger(spec[`${edge}_offset_minutes`] || 0) && Math.abs(spec[`${edge}_offset_minutes`] || 0) <= 180)
+        : (spec.kind !== "time_window" || !!(spec.start && spec.end)) && (!!spec.start === !!spec.end) && (!spec.start || spec.start !== spec.end)
+    const valid = !!(spec.name.trim() && spec.targets.length && spec.weekdays.length && (spec.kind !== "humidity_band" || (sensorCount && spec.lower < spec.upper)) && timingValid)
     async function inspect() {
         setBusy(true); setError("")
         try {setPreview(await httpPost<Preview>("/automations/preview", spec))} catch (e) {setError(errorText(e))} finally {setBusy(false)}
@@ -65,7 +71,7 @@ function RuleEditor({home, controller, rule, done, cancel}: {home: Home; control
         <form className={s.form} onSubmit={save}>
             <p className={s.muted}>{displayZone(controller.zone_id, controller.zone_name)} → {controller.display_name} → Rule</p>
             <label className={s.field}>Name<input required maxLength={100} value={spec.name} onChange={e => update({name: e.target.value})} placeholder="For example: Keep the cellar dry"/></label>
-            <div className={s.sentence} aria-live="polite">{spec.kind === "humidity_band" ? <>Switch on when any selected sensor reaches <strong>{spec.upper} %</strong>. Switch off once all selected sensors are at or below <strong>{spec.lower} %</strong>.</> : spec.kind === "time_window" ? <>Switch the assigned devices on from <strong>{spec.start}</strong> to <strong>{spec.end}</strong>.</> : <>Start cleaning on the selected days at <strong>{spec.at}</strong>.</>}</div>
+            <div className={s.sentence} aria-live="polite">{spec.kind === "humidity_band" ? <>Switch on when any selected sensor reaches <strong>{spec.upper} %</strong>. Switch off once all selected sensors are at or below <strong>{spec.lower} %</strong>.</> : spec.kind === "time_window" ? <>Switch the assigned devices on at <strong>{timingText(spec, "start")}</strong> on the selected days. Switch off at <strong>{timingText(spec, "end")}</strong>{solar ? " every day." : "."}</> : <>Start cleaning on the selected days at <strong>{spec.at}</strong>.</>}</div>
             <div className={s.notice}><strong>Entities from this controller</strong>{controller.entities.map(entity => <p key={entity.device_id}>{entity.name} · {entity.role === "humidity_sensor" ? "Measures room humidity" : controller.domain === "humidity" ? "Powers the dehumidifier" : controller.domain === "cleaning" ? "Performs cleaning" : controller.domain === "lighting" ? "Controls the lights" : "Switchable target"}</p>)}</div>
             {spec.kind === "humidity_band" && <>
                 <div className={s.split}><label className={s.field}>Switch on at or above (%)<input required type="number" min={0} max={100} step="0.1" value={spec.upper} onChange={e => update({upper: Number(e.target.value)})}/></label>
@@ -79,15 +85,19 @@ function RuleEditor({home, controller, rule, done, cancel}: {home: Home; control
                 onClick={() => update({weekdays: spec.weekdays.includes(index) ? spec.weekdays.filter(i => i !== index) : [...spec.weekdays, index].sort()})}>{day}</button>)}</div></div>
             {spec.kind === "cleaning" ? <label className={s.field}>Start cleaning at<input type="time" required value={spec.at} onChange={e => update({at: e.target.value})}/></label> : <>
                 {spec.kind === "humidity_band" && <label className={s.row}><input type="checkbox" checked={!!spec.start} onChange={e => update(e.target.checked ? {start: "08:00", end: "22:00"} : {start: null, end: null})}/>Only within a time window</label>}
-                {spec.start !== null && <div className={s.split}><label className={s.field}>From<input required type="time" value={spec.start} onChange={e => update({start: e.target.value})}/></label>
+                {spec.kind === "time_window" ? <>
+                    <div className={s.split}><TimingPoint edge="start" spec={spec} update={update}/><TimingPoint edge="end" spec={spec} update={update}/></div>
+                    {!timingValid && <p className={s.error} role="alert">Choose distinct on and off triggers. Solar offsets must be whole minutes between −180 and 180.</p>}
+                    {solar && <><LocalTimePreview spec={spec} valid={valid} homeId={home.id}/><p className={s.muted}>Selected days apply to the sunrise/sunset date before its offset, or the fixed switch-on date. The off trigger runs every day, including after an overnight schedule. Missed events while Home Assistant is stopped are not replayed.</p></>}
+                </> : spec.start !== null && <div className={s.split}><label className={s.field}>From<input required type="time" value={spec.start} onChange={e => update({start: e.target.value})}/></label>
                     <label className={s.field}>Until<input required type="time" value={spec.end || ""} onChange={e => update({end: e.target.value})}/></label></div>}
-                {spec.start && <p className={s.muted}>Switch off outside the time window. For overnight windows, the selected weekday is the starting day.</p>}
+                {spec.start && !solar && <p className={s.muted}>Switch off outside the time window. For overnight windows, the selected weekday is the starting day.</p>}
                 {spec.kind === "time_window" && <label className={s.field}>Brightness, optional (1–100%)<input type="number" min={1} max={100} value={spec.brightness_pct ?? ""} placeholder="Keep current brightness" onChange={e => update({brightness_pct: e.target.value ? Number(e.target.value) : null})}/><span className={s.muted}>Only for targets that support dimming.</span></label>}
             </>}
-            <p className={s.muted}>Time zone: {home.timezone}. Deployed rules continue running locally. Time windows and stale measurements are checked at least once a minute.</p>
+            <p className={s.muted}>Time zone: {home.timezone}. Deployed rules continue running locally. {solar ? "Sunrise and sunset triggers follow Home Assistant’s configured home location." : "Time windows and stale measurements are checked at least once a minute."}</p>
             {error && <div className={s.error} role="alert">{error}</div>}
             {preview && <div className={s.notice} aria-live="polite"><strong>Preview without device commands</strong>{spec.kind === "humidity_band" && <p>Highest humidity across {preview.sensor_count ?? sensorCount} sensor{(preview.sensor_count ?? sensorCount) !== 1 ? "s" : ""}: {preview.humidity === null ? "a selected measurement is missing or stale" : `${preview.humidity} %`}</p>}
-                {preview.items.map(item => <p key={item.id}>{item.name}: {item.desired === "scheduled" ? `Scheduled at ${spec.at}` : item.desired === "on" ? "On" : "Off"} · {reasons[item.reason] || item.reason}</p>)}
+                {preview.items.map(item => <p key={item.id}>{item.name}: {item.desired === "scheduled" ? solar ? "Scheduled · see local times above" : `Scheduled at ${spec.at}` : item.desired === "on" ? "On" : "Off"} · {reasons[item.reason] || item.reason}</p>)}
                 <small>Availability and minimum switching intervals may delay execution.</small></div>}
             <div className={s.row}><button type="button" disabled={!valid || busy} onClick={() => void inspect()}>Preview effect</button><button className={s.primary} disabled={!valid || busy}>Save Draft</button></div>
         </form></section>
@@ -113,7 +123,7 @@ export function Rules({home, controller, revision, changed, report}: {home: Home
         {result?.data?.length === 0 && <div className={s.empty}>No rules for this controller yet.<br/>Set thresholds or a schedule.</div>}
         <div className={s.grid}>{result?.data?.map(rule => <article className={s.card} key={rule.id}><span className={s.badge}>{rule.deleted ? "Removal pending" : status[rule.status] || rule.status}{connections?.data && !connections.data.some(c => c.id === rule.agent_id && c.connected) ? " · Connection offline" : ""}</span>
             <h3 style={{marginTop: 14}}>{rule.spec.name}</h3><p className={s.muted}>{rule.spec.targets.length} target device{rule.spec.targets.length !== 1 ? "s" : ""} · {rule.spec.weekdays.map(i => days[i]).join(", ")}</p>
-            <p>{rule.spec.kind === "humidity_band" ? `On at ${rule.spec.upper}%, off at ${rule.spec.lower}%` : rule.spec.kind === "cleaning" ? `Cleaning at ${rule.spec.at}` : `${rule.spec.start}–${rule.spec.end}`}</p>
+            <p>{rule.spec.kind === "humidity_band" ? `On at ${rule.spec.upper}%, off at ${rule.spec.lower}%` : rule.spec.kind === "cleaning" ? `Cleaning at ${rule.spec.at}` : `On at ${timingText(rule.spec, "start")} · Off at ${timingText(rule.spec, "end")}`}</p>
             {rule.error && <p role="alert" className={s.error}>{messageOf(rule.error)}</p>}
             {rule.deployed_version && rule.deployed_version !== rule.version && <p className={s.muted}>Saved version: {rule.version}. Locally confirmed version: {rule.deployed_version}.</p>}
             {!rule.deleted && <div className={s.row}>
