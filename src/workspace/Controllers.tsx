@@ -37,7 +37,7 @@ export function ControllerZone({domain, zoneId, zoneName, revision, create, open
         {result?.data?.length === 0 && <ControllerEmptyState unsupported={domain === "surveillance"}/>}
         <div className={pads.padList}>{result?.data?.map(controller => <article className={pads.pad} key={controller.controller_id}>
             <header className={c.cardHeader}><span className={c.icon}><Icon size={22}/></span><h2>{controller.display_name}</h2><span className={s.badge}>{controller.entities.some(e => !e.available) ? "Check connection" : controller.rules.some(r => r.status === "active") ? "Active" : "Ready"}</span></header>
-            <p className={c.meaning}>{controller.domain === "humidity" ? "The humidity measurement determines when the assigned dehumidifiers switch on and off." : controller.domain === "lighting" ? "These entities form the lighting group managed by this controller." : controller.domain === "cleaning" ? "This controller schedules cleaning with the assigned robot vacuums." : "This controller switches the assigned devices according to its rules."}</p>
+            <p className={c.meaning}>{controller.domain === "humidity" ? "The highest selected humidity reading determines when the assigned dehumidifiers switch on and off." : controller.domain === "lighting" ? "These entities form the lighting group managed by this controller." : controller.domain === "cleaning" ? "This controller schedules cleaning with the assigned robot vacuums." : "This controller switches the assigned devices according to its rules."}</p>
             <div className={c.roles}>{controller.entities.map(entity => <div key={entity.device_id}><span className={s.muted}>{roleLabels[entity.role]}</span><strong>{entity.name}</strong><span>{valueOf(entity)}</span></div>)}</div>
             <div className={c.ruleSummary}>{controller.rules.length ? controller.rules.map(rule => <p key={rule.id}><strong>{rule.spec.name}</strong> · {rule.spec.kind === "humidity_band" ? `On at ${rule.spec.upper}%, off at ${rule.spec.lower}%` : rule.spec.kind === "cleaning" ? `At ${rule.spec.at}` : `${rule.spec.start}–${rule.spec.end}`}<span className={s.muted}> · {rule.status === "draft" ? "Draft" : rule.status === "active" ? "Active" : rule.status === "paused" ? "Paused" : rule.status === "pending" ? "Awaiting confirmation" : "Check deployment"}</span></p>) : <p className={s.muted}>No rules yet. The entities are already assigned.</p>}</div>
             <div className={s.row}><button className={`${button.button} ${button.actionButton}`} onClick={() => open(controller.controller_id, false)}>Edit Controller</button><button className={`${button.button} ${button.actionButton}`} onClick={() => open(controller.controller_id, true)}>Edit Rules · {controller.rule_count}</button></div>
@@ -52,7 +52,7 @@ function ControllerForm({domain, zoneId, zones, controller, saved, cancel}: {
     const [name, setName] = useState(controller?.display_name || "")
     const [zone, setZone] = useState(controller?.zone_id || zoneId)
     const [targets, setTargets] = useState<string[]>(controller?.bindings.targets || [])
-    const [sensor, setSensor] = useState<string | null>(controller?.bindings.sensor_id || null)
+    const [sensors, setSensors] = useState<string[]>(controller?.bindings.sensor_ids || (controller?.bindings.sensor_id ? [controller.bindings.sensor_id] : []))
     const [expectedVersion] = useState(controller?.version || null)
     const [error, setError] = useState("")
     const [busy, setBusy] = useState(false)
@@ -61,7 +61,7 @@ function ControllerForm({domain, zoneId, zones, controller, saved, cancel}: {
     const writable = home.role !== "viewer"
     async function save(e: FormEvent) {
         e.preventDefault(); setBusy(true); setError("")
-        const body = {display_name: name, zone_id: zone, targets, sensor_id: sensor, expected_version: expectedVersion}
+        const body = {display_name: name, zone_id: zone, targets, sensor_ids: sensors, expected_version: expectedVersion}
         try {
             if (controller) await httpPut(`/domains/${domain}/controllers/${controller.controller_id}`, body)
             else await httpPost(`/domains/${domain}/controllers`, body)
@@ -77,10 +77,11 @@ function ControllerForm({domain, zoneId, zones, controller, saved, cancel}: {
         <fieldset disabled={!writable || locked || busy} className={c.entityFields}>
             <legend>Entities and roles</legend>
             <DevicePicker capability={domain === "cleaning" ? "cleaning" : "switching"} title={domain === "humidity" ? "Powers the dehumidifier" : domain === "lighting" ? "Controls the lights" : domain === "cleaning" ? "Performs cleaning" : "Powers the device"} selected={targets} agentId={first?.data?.agent_id} zoneId={zone} change={setTargets}/>
-            {domain === "humidity" && <DevicePicker title="Measures room humidity" capability="humidity" multiple={false} selected={sensor ? [sensor] : []} agentId={first?.data?.agent_id} zoneId={zone} change={ids => setSensor(ids[0] || null)}/>}
+            {domain === "humidity" && <><DevicePicker title="Measures room humidity" capability="humidity" selected={sensors} agentId={first?.data?.agent_id} zoneId={zone} change={setSensors}/>
+                <p className={s.muted}>Select one or more sensors. The highest reading is used: switch on when any sensor reaches the upper threshold, and off once all are at or below the lower threshold.</p></>}
         </fieldset>
         {error && <p className={s.error} role="alert">{error}</p>}
-        <div className={s.row}><button className={s.primary} disabled={!writable || busy || !name.trim() || !targets.length || (domain === "humidity" && !sensor)}>Save Controller</button><button type="button" onClick={cancel}>Cancel</button></div>
+        <div className={s.row}><button className={s.primary} disabled={!writable || busy || !name.trim() || !targets.length || (domain === "humidity" && !sensors.length)}>Save Controller</button><button type="button" onClick={cancel}>Cancel</button></div>
         {controller && <button type="button" disabled={!writable || busy || controller.rule_count > 0} onClick={() => {setBusy(true); void httpDelete(`/domains/${domain}/controllers/${controller.controller_id}`).then(saved).catch(e => setError(errorText(e))).finally(() => setBusy(false))}}>Remove Controller</button>}
     </form>
 }

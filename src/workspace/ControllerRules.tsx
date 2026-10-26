@@ -20,10 +20,10 @@ export function DevicePicker({capability, selected, change, multiple = true, age
             .then(entries => {if (alive) setNames(Object.fromEntries(entries))})
         return () => {alive = false}
     }, [selected])
-    return <div><div className={s.row} style={{justifyContent: "space-between"}}><strong>{title || (multiple ? "Target devices" : "Humidity measurement")}</strong><button type="button" onClick={() => setExpanded(!expanded)}>{expanded ? "Close selection" : "Change selection"}</button></div>
+    return <div><div className={s.row} style={{justifyContent: "space-between"}}><strong>{title || (capability === "humidity" ? "Humidity measurements" : "Target devices")}</strong><button type="button" onClick={() => setExpanded(!expanded)}>{expanded ? "Close selection" : "Change selection"}</button></div>
         <div className={s.chips}>{selected.map(id => <button type="button" key={id} onClick={() => change(selected.filter(x => x !== id))} aria-label={`${names[id] || "Device"} remove from selection`}>{names[id] || "Loading …"} ×</button>)}</div>
         {!expanded && !selected.length && <button type="button" onClick={() => setExpanded(true)}>Select device</button>}
-        {expanded && <><label className={s.field}>{multiple ? "Select target devices" : "Select humidity measurement"}
+        {expanded && <><label className={s.field}>{capability === "humidity" ? "Select humidity sensors" : "Select target devices"}
         <input type="search" value={query} placeholder="Search devices …" onChange={e => {setQuery(e.target.value); setOffset(0)}}/></label>
         {result?.error && <p role="alert">{result.error}</p>}
         <div className={s.list}>{result?.data?.items.filter(d => capability !== "cleaning" || d.capabilities.actions?.includes("start")).map(d => <label className={s.choice} key={d.id}>
@@ -35,7 +35,7 @@ export function DevicePicker({capability, selected, change, multiple = true, age
     </div>
 }
 
-const initialSpec: Spec = {name: "", kind: "humidity_band", targets: [], sensor_id: null, lower: 52, upper: 55, weekdays: [0,1,2,3,4,5,6],
+const initialSpec: Spec = {name: "", kind: "humidity_band", targets: [], sensor_id: null, sensor_ids: [], lower: 52, upper: 55, weekdays: [0,1,2,3,4,5,6],
     start: null, end: null, at: "10:00", min_cycle_seconds: 180, sensor_stale_seconds: 1800, brightness_pct: null, enabled: true}
 
 function RuleEditor({home, controller, rule, done, cancel}: {home: Home; controller: SemanticController; rule: Automation | null; done: () => void; cancel: () => void}) {
@@ -43,8 +43,9 @@ function RuleEditor({home, controller, rule, done, cancel}: {home: Home; control
     const [preview, setPreview] = useState<Preview | null>(null)
     const [error, setError] = useState("")
     const [busy, setBusy] = useState(false)
+    const sensorCount = spec.sensor_ids?.length || (spec.sensor_id ? 1 : 0)
     function update(patch: Partial<Spec>) {setSpec(old => ({...old, ...patch})); setPreview(null); setError("")}
-    const valid = spec.name.trim() && spec.targets.length && spec.weekdays.length && (spec.kind !== "humidity_band" || (spec.sensor_id && spec.lower < spec.upper)) &&
+    const valid = spec.name.trim() && spec.targets.length && spec.weekdays.length && (spec.kind !== "humidity_band" || (sensorCount && spec.lower < spec.upper)) &&
         (spec.kind !== "time_window" || (spec.start && spec.end)) && (!!spec.start === !!spec.end) && (!spec.start || spec.start !== spec.end)
     async function inspect() {
         setBusy(true); setError("")
@@ -64,16 +65,16 @@ function RuleEditor({home, controller, rule, done, cancel}: {home: Home; control
         <form className={s.form} onSubmit={save}>
             <p className={s.muted}>{displayZone(controller.zone_id, controller.zone_name)} → {controller.display_name} → Rule</p>
             <label className={s.field}>Name<input required maxLength={100} value={spec.name} onChange={e => update({name: e.target.value})} placeholder="For example: Keep the cellar dry"/></label>
-            <div className={s.sentence} aria-live="polite">{spec.kind === "humidity_band" ? <>When humidity reaches <strong>{spec.upper} %</strong> switch the assigned devices on. Switch them off at <strong>{spec.lower} %</strong>.</> : spec.kind === "time_window" ? <>Switch the assigned devices on from <strong>{spec.start}</strong> to <strong>{spec.end}</strong>.</> : <>Start cleaning on the selected days at <strong>{spec.at}</strong>.</>}</div>
+            <div className={s.sentence} aria-live="polite">{spec.kind === "humidity_band" ? <>Switch on when any selected sensor reaches <strong>{spec.upper} %</strong>. Switch off once all selected sensors are at or below <strong>{spec.lower} %</strong>.</> : spec.kind === "time_window" ? <>Switch the assigned devices on from <strong>{spec.start}</strong> to <strong>{spec.end}</strong>.</> : <>Start cleaning on the selected days at <strong>{spec.at}</strong>.</>}</div>
             <div className={s.notice}><strong>Entities from this controller</strong>{controller.entities.map(entity => <p key={entity.device_id}>{entity.name} · {entity.role === "humidity_sensor" ? "Measures room humidity" : controller.domain === "humidity" ? "Powers the dehumidifier" : controller.domain === "cleaning" ? "Performs cleaning" : controller.domain === "lighting" ? "Controls the lights" : "Switchable target"}</p>)}</div>
             {spec.kind === "humidity_band" && <>
                 <div className={s.split}><label className={s.field}>Switch on at or above (%)<input required type="number" min={0} max={100} step="0.1" value={spec.upper} onChange={e => update({upper: Number(e.target.value)})}/></label>
                     <label className={s.field}>Switch off at or below (%)<input required type="number" min={0} max={100} step="0.1" value={spec.lower} onChange={e => update({lower: Number(e.target.value)})}/></label></div>
-                <p className={s.muted}>Between {spec.lower}% and {spec.upper}% the current state is kept. Assign a room humidity sensor explicitly; the plug alone does not measure humidity.</p>
+                <p className={s.muted}>Uses the highest reading from {sensorCount} selected sensor{sensorCount !== 1 ? "s" : ""}. Between {spec.lower}% and {spec.upper}% the current state is kept.</p>
                 {spec.lower >= spec.upper && <p className={s.error} role="alert">The off threshold must be lower than the on threshold.</p>}
                 <details><summary>Device protection and measurement age</summary><div className={s.split} style={{marginTop: 16}}><label className={s.field}>Minimum switching interval (seconds)<input required type="number" min={0} max={86400} value={spec.min_cycle_seconds} onChange={e => update({min_cycle_seconds: Number(e.target.value)})}/></label>
                     <label className={s.field}>Maximum measurement age (minutes)<input required type="number" min={1} max={1440} value={spec.sensor_stale_seconds / 60} onChange={e => update({sensor_stale_seconds: Number(e.target.value) * 60})}/></label></div>
-                <p className={s.muted}>Choose the switching interval according to the device specifications. A missing or stale measurement switches the outputs off.</p></details></>}
+                <p className={s.muted}>Choose the switching interval according to the device specifications. If any selected sensor is missing or stale, the outputs switch off.</p></details></>}
             <div className={s.field}><span>Active days</span><div className={s.days}>{days.map((day, index) => <button type="button" key={day} aria-pressed={spec.weekdays.includes(index)} className={spec.weekdays.includes(index) ? s.active : ""}
                 onClick={() => update({weekdays: spec.weekdays.includes(index) ? spec.weekdays.filter(i => i !== index) : [...spec.weekdays, index].sort()})}>{day}</button>)}</div></div>
             {spec.kind === "cleaning" ? <label className={s.field}>Start cleaning at<input type="time" required value={spec.at} onChange={e => update({at: e.target.value})}/></label> : <>
@@ -85,7 +86,7 @@ function RuleEditor({home, controller, rule, done, cancel}: {home: Home; control
             </>}
             <p className={s.muted}>Time zone: {home.timezone}. Deployed rules continue running locally. Time windows and stale measurements are checked at least once a minute.</p>
             {error && <div className={s.error} role="alert">{error}</div>}
-            {preview && <div className={s.notice} aria-live="polite"><strong>Preview without device commands</strong>{spec.kind === "humidity_band" && <p>Current humidity: {preview.humidity === null ? "no valid measurement" : `${preview.humidity} %`}</p>}
+            {preview && <div className={s.notice} aria-live="polite"><strong>Preview without device commands</strong>{spec.kind === "humidity_band" && <p>Highest humidity across {preview.sensor_count ?? sensorCount} sensor{(preview.sensor_count ?? sensorCount) !== 1 ? "s" : ""}: {preview.humidity === null ? "a selected measurement is missing or stale" : `${preview.humidity} %`}</p>}
                 {preview.items.map(item => <p key={item.id}>{item.name}: {item.desired === "scheduled" ? `Scheduled at ${spec.at}` : item.desired === "on" ? "On" : "Off"} · {reasons[item.reason] || item.reason}</p>)}
                 <small>Availability and minimum switching intervals may delay execution.</small></div>}
             <div className={s.row}><button type="button" disabled={!valid || busy} onClick={() => void inspect()}>Preview effect</button><button className={s.primary} disabled={!valid || busy}>Save Draft</button></div>
