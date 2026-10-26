@@ -13,3 +13,8 @@ export function rampText(spec: Spec) {
     const ramp = spec.ramp
     return ramp ? `Dim start at ${ramp.start_at} · Follow natural dawn · ${ramp.off_at_end ? "Off" : "Stop adjusting"} at ${ramp.stop_at}` : "Natural dawn ramp"
 }
+
+export function humidityText(spec: Spec) {
+    const thresholds = `On at ${spec.upper}%, off at ${spec.lower}%`
+    return spec.start && spec.end ? `${thresholds} · ${spec.start}–${spec.end}${spec.start > spec.end ? " next day" : ""} · Forced off outside these hours` : `${thresholds} · All day on selected days`
+}
