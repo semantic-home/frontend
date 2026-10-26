@@ -10,7 +10,7 @@ import {displayZone, errorText, useLoad} from "./shared.ts"
 import {ControllerEmptyState} from "../main/content/pads/components/ControllerEmptyState.tsx"
 import {httpDelete, httpPost, httpPut} from "../api/http.ts"
 import {DevicePicker, Rules} from "./ControllerRules.tsx"
-import {timingText} from "./schedule.ts"
+import {rampText, timingText} from "./schedule.ts"
 import s from "./Workspace.module.css"
 import c from "./Controllers.module.css"
 import pads from "../main/content/pads/ControllerPads.module.css"
@@ -40,7 +40,7 @@ export function ControllerZone({domain, zoneId, zoneName, revision, create, open
             <header className={c.cardHeader}><span className={c.icon}><Icon size={22}/></span><h2>{controller.display_name}</h2><span className={s.badge}>{controller.entities.some(e => !e.available) ? "Check connection" : controller.rules.some(r => r.status === "active") ? "Active" : "Ready"}</span></header>
             <p className={c.meaning}>{controller.domain === "humidity" ? "The highest selected humidity reading determines when the assigned dehumidifiers switch on and off." : controller.domain === "lighting" ? "These entities form the lighting group managed by this controller." : controller.domain === "cleaning" ? "This controller schedules cleaning with the assigned robot vacuums." : "This controller switches the assigned devices according to its rules."}</p>
             <div className={c.roles}>{controller.entities.map(entity => <div key={entity.device_id}><span className={s.muted}>{roleLabels[entity.role]}</span><strong>{entity.name}</strong><span>{valueOf(entity)}</span></div>)}</div>
-            <div className={c.ruleSummary}>{controller.rules.length ? controller.rules.map(rule => <p key={rule.id}><strong>{rule.spec.name}</strong> · {rule.spec.kind === "humidity_band" ? `On at ${rule.spec.upper}%, off at ${rule.spec.lower}%` : rule.spec.kind === "cleaning" ? `At ${rule.spec.at}` : `On at ${timingText(rule.spec, "start")} · Off at ${timingText(rule.spec, "end")}`}<span className={s.muted}> · {rule.status === "draft" ? "Draft" : rule.status === "active" ? "Active" : rule.status === "paused" ? "Paused" : rule.status === "pending" ? "Awaiting confirmation" : "Check deployment"}</span></p>) : <p className={s.muted}>No rules yet. The entities are already assigned.</p>}</div>
+            <div className={c.ruleSummary}>{controller.rules.length ? controller.rules.map(rule => <p key={rule.id}><strong>{rule.spec.name}</strong> · {rule.spec.kind === "humidity_band" ? `On at ${rule.spec.upper}%, off at ${rule.spec.lower}%` : rule.spec.kind === "cleaning" ? `At ${rule.spec.at}` : rule.spec.kind === "lighting_ramp" ? rampText(rule.spec) : `On at ${timingText(rule.spec, "start")} · Off at ${timingText(rule.spec, "end")}`}<span className={s.muted}> · {rule.status === "draft" ? "Draft" : rule.status === "active" ? "Active" : rule.status === "paused" ? "Paused" : rule.status === "pending" ? "Awaiting confirmation" : "Check deployment"}</span></p>) : <p className={s.muted}>No rules yet. The entities are already assigned.</p>}</div>
             <div className={s.row}><button className={`${button.button} ${button.actionButton}`} onClick={() => open(controller.controller_id, false)}>Edit Controller</button><button className={`${button.button} ${button.actionButton}`} onClick={() => open(controller.controller_id, true)}>Edit Rules · {controller.rule_count}</button></div>
         </article>)}</div>
     </div></div>

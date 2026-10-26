@@ -8,3 +8,8 @@ export function timingText(spec: Spec, edge: ScheduleEdge) {
     const name = event === "sunrise" ? "sunrise" : "sunset"
     return offset ? `${Math.abs(offset)} min ${offset < 0 ? "before" : "after"} ${name}` : name
 }
+
+export function rampText(spec: Spec) {
+    const ramp = spec.ramp
+    return ramp ? `Dim start at ${ramp.start_at} · Follow natural dawn · ${ramp.off_at_end ? "Off" : "Stop adjusting"} at ${ramp.stop_at}` : "Natural dawn ramp"
+}

@@ -58,4 +58,25 @@
 .solarEvents li:last-child {border: 0;}
 .solarEvents li > span:last-child {display: grid; gap: 4px;}
 .solarEvents .badge {min-width: 30px; text-align: center;}
+.rampPhase {display: grid; grid-template-columns: minmax(95px, .8fr) 1fr 1fr; align-items: center; gap: 12px; padding: 14px 0; border-top: 1px solid var(--border);}
+.rampPhase > strong {display: grid; gap: 4px; font-size: 14px;}
+.rampPhase small {font-weight: 400;}
+.rampPlot {display: grid; grid-template-columns: 35px minmax(0, 1fr); margin: 28px 0 20px; color: var(--text-muted);}
+.rampGraphic {position: relative; min-width: 0;}
+.rampChart {display: block; width: 100%; height: 140px; overflow: visible;}
+.rampYAxis {position: relative; height: 140px; font-size: 11px;}
+.rampYAxis span {position: absolute; right: 8px; transform: translateY(-50%);}
+.rampXAxis {grid-column: 2; display: flex; justify-content: space-between; font-size: 12px;}
+.rampMarker {position: absolute; width: 8px; height: 8px; transform: translate(-50%, -50%); border-radius: 50%; background: var(--accent-strong); pointer-events: none;}
+.rampGrid {stroke: var(--border-strong); stroke-width: 1; vector-effect: non-scaling-stroke;}
+.rampReadout {display: flex; align-items: baseline; flex-wrap: wrap; gap: 14px; padding: 12px 0;}
+.rampReadout strong {font-size: 23px; color: var(--text);}
+.phaseTimes {list-style: none; padding: 0; margin: 0;}
+.phaseTimes li {display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 14px;}
+.phaseTimes li > span {display: grid; gap: 4px;}
+.phaseTimes small {color: var(--text-muted); font-size: 12px;}
+.shell input[type=range] {padding: 0; accent-color: var(--accent-strong); border: 0; cursor: ew-resize;}
+@media(max-width: 640px) {.rampPhase {grid-template-columns: 1fr 1fr;} .rampPhase > strong {grid-column: 1 / -1; display: flex; justify-content: space-between;}}
 @media(max-width: 640px) {.split {grid-template-columns: 1fr;} .templates button {min-width: 0; font-size: 13px; padding: 10px 8px; overflow-wrap: anywhere;} .templates small {display: none;} .card {padding: 18px;}}
+
+@container (max-width: 430px) {.rampPhase {grid-template-columns: 1fr 1fr;} .rampPhase > strong {grid-column: 1 / -1; display: flex; justify-content: space-between;}}

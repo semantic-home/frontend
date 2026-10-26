@@ -30,7 +30,12 @@ export function useLoad<T>(path: string | null, revision = 0) {
         let alive = true
         const load = () => httpGet<T>(path).then(data => {
             if (alive) setResult({path, data})
-        }).catch(e => {if (alive) setResult({path, error: errorText(e)})})
+        }).catch(e => {
+            if (alive) setResult(previous => ({path, error: errorText(e),
+                // Keep forms mounted during a transient polling failure. Never
+                // retain data after permission, authentication or not-found errors.
+                data: (!(e instanceof ApiError) || e.status >= 500) && previous?.path === path ? previous.data : undefined}))
+        })
         void load()
         const timer = window.setInterval(() => {if (!document.hidden) void load()}, 15000)
         return () => {alive = false; window.clearInterval(timer)}
