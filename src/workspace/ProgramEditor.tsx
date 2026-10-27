@@ -65,7 +65,7 @@ function ConditionEditor({value,change,context,depth=0}:{value:Group;change:(v:G
     return <div className={c.conditions}>
         <label className={s.field}>Match conditions<select value={value.kind} onChange={e=>{const kind=e.target.value as Group['kind'];change({kind,terms:kind==='not'?(value.terms.length===1?value.terms:[{kind:'all',terms:value.terms}]):value.terms})}}><option value="all">All of these</option><option value="any">Any of these</option><option value="not">Not this condition/group</option></select></label>
         {!value.terms.length&&<p className={s.muted}>No extra conditions.</p>}
-        {value.terms.map((item,i)=><div className={c.condition} key={i}><div className={s.row}>
+        {value.terms.map((item,i)=><div className={c.condition} key={i}><div className={c.conditionHeader}>
             <label className={s.field}>Condition {i+1}<select value={item.kind==='all'||item.kind==='any'||item.kind==='not'?'group':item.kind} onChange={e=>update(i,conditionDefault(e.target.value==='group'?'all':e.target.value as Condition['kind'],context))}>
                 <option value="state">Entity state</option><option value="number">Numeric comparison</option><option value="clock">Within clock hours</option>{context.triggers.length>0&&<option value="trigger">Started by event</option>}<option value="group">Condition group</option></select></label>
             <button type="button" onClick={()=>change({...value,terms:value.terms.filter((_,n)=>n!==i)})}>Remove condition</button></div>

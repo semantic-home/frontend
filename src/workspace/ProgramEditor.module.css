@@ -8,7 +8,12 @@
 .anchor legend,.block legend,.point legend {padding:0 6px;font-weight:500;}
 .anchor p,.point p {margin:0;}
 .conditions,.steps {display:grid;gap:16px;min-width:0;}
-.condition {display:grid;gap:14px;border-left:2px solid var(--border);padding-left:14px;min-width:0;}
+.condition {display:grid;gap:14px;border-left:2px solid var(--border);padding-left:14px;min-width:0;container-type:inline-size;}
+.conditionHeader {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:12px;}
+.conditionHeader > label {min-width:0;}
+.conditionHeader select,.conditionHeader > button {min-height:42px;}
+.conditionHeader > button {white-space:nowrap;justify-self:end;}
+@container (max-width:340px) {.conditionHeader {grid-template-columns:minmax(0,1fr);}}
 .partLabel {font-weight:600;margin:8px 0 0;}
 .check {display:flex;align-items:center;gap:10px;line-height:1.5;}
 .check input {width:auto;flex:none;}
