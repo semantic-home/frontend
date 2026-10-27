@@ -126,16 +126,36 @@ function BandFields({value,change,context}:{value:BandControl;change:(v:BandCont
     </>
 }
 
+function SharedDaylightCurve({value}:{value:CurveControl}) {
+    const points=value.points.filter(p=>Number.isFinite(p.position)&&Number.isFinite(p.brightness_pct)).sort((a,b)=>a.position-b.position)
+    const low=points[0]?.position||0,span=(points.at(-1)?.position||0)-low||1
+    return <section className={c.sharedCurve} aria-label="Shared morning and evening curve">
+        <strong>One shared curve for morning and evening</strong>
+        <p>Changing a point changes both periods. The morning follows these points as the sun rises; the evening follows the same points in reverse as the sun sets.</p>
+        <div className={c.sharedDirections}>{(['Morning','Evening'] as const).map(period=>{
+            const ordered=period==='Morning'?points:[...points].reverse()
+            const x=(position:number)=>12+(period==='Morning'?(position-low)/span:1-(position-low)/span)*156
+            const path=ordered.map((point,i)=>`${i?'L':'M'}${x(point.position)},${58-point.brightness_pct*.5}`).join(' ')
+            return <figure key={period}><figcaption>{period} · sun {period==='Morning'?'rising':'setting'}</figcaption>
+                <svg viewBox="0 0 180 68" role="img" aria-label={`${period} curve: ${ordered.map(p=>p.brightness_pct+'%').join(' → ')}`}><path d={path}/>{ordered.map((point,i)=><circle key={i} cx={x(point.position)} cy={58-point.brightness_pct*.5} r="3"/>)}</svg>
+                <p className={c.readout}>{ordered.map(p=>p.brightness_pct+'%').join(' → ')}</p>
+            </figure>
+        })}</div>
+        <small>Curve shape, not a clock schedule. The local-time preview below includes your start, switch-on level and end time.</small>
+    </section>
+}
+
 function CurveFields({value,change,context}:{value:CurveControl;change:(v:CurveControl)=>void;context:Context}) {
     const outputs=context.controller.entities.filter(d=>context.controller.bindings.targets.includes(d.device_id))
     const point=(i:number,patch:Partial<CurveControl['points'][number]>)=>change({...value,points:value.points.map((p,n)=>n===i?{...p,...patch}:p)})
     return <><label className={s.field}>Change the lights with<select value={value.driver} onChange={e=>{const driver=e.target.value as CurveControl['driver'];change({...value,driver,sensor_id:driver==='measurement'?'':null,points:driver==='sun_elevation'?blankCurve().points:[{position:0,brightness_pct:1,kelvin:2702},{position:60,brightness_pct:100,kelvin:5500}]})}}>
             <option value="sun_elevation">Natural daylight</option><option value="elapsed_minutes">Time since switch-on</option><option value="measurement">A sensor reading</option></select></label>
         {value.driver==='sun_elevation'&&<label className={s.field}>Daylight pattern<select value={value.solar_direction} onChange={e=>change({...value,solar_direction:e.target.value as CurveControl['solar_direction']})}><option value="rising">Morning (dawn)</option><option value="setting">Evening (dusk)</option><option value="any">Morning and evening</option></select></label>}
+        {value.driver==='sun_elevation'&&value.solar_direction==='any'&&<SharedDaylightCurve value={value}/>}
         {value.driver==='measurement'&&<><InputPicker context={context} label="Curve measurement" numeric value={value.sensor_id?[value.sensor_id]:[]} change={ids=>change({...value,sensor_id:ids[0] || ''})}/><NumberField label="Curve measurement age limit (minutes)" min={1} max={1440} value={value.max_age_seconds/60} change={n=>change({...value,max_age_seconds:n*60})}/></>}
         <NumberField label="Brightness at switch-on (%)" min={1} max={100} value={value.initial_brightness_pct} change={initial_brightness_pct=>change({...value,initial_brightness_pct})}/>
         <p className={c.hint}>This rule switches the lights on at its start and can switch them off at its end. A separate on/off rule is not needed.</p>
-        <details className={c.details}><summary>Fine-tune the light · {value.points.length} curve points</summary><div className={c.advancedBody}>
+        <details className={c.details}><summary>{value.driver==='sun_elevation'&&value.solar_direction==='any'?'Edit shared morning & evening curve':'Fine-tune the light'} · {value.points.length} curve points</summary><div className={c.advancedBody}>
         <label className={s.field}>Adjust<select value={value.color_mode} onChange={e=>change({...value,color_mode:e.target.value as CurveControl['color_mode']})}><option value="brightness">Brightness only</option>{outputs.every(d=>d.capabilities?.color_temp?.supported)&&<option value="white">Brightness and white temperature</option>}</select></label>
         <div className={s.split}>{value.color_mode==='white'&&<NumberField label="White temperature at switch-on (K)" min={1000} max={10000} value={value.initial_kelvin} change={initial_kelvin=>change({...value,initial_kelvin})}/>}
             <NumberField label="Blend into the curve over (minutes)" min={0} max={120} value={value.startup_minutes} change={startup_minutes=>change({...value,startup_minutes})}/></div>

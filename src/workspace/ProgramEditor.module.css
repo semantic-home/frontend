@@ -35,3 +35,15 @@
 .optional {border-top:1px solid var(--border);padding:8px 0;}
 .optional > summary {cursor:pointer;font-weight:600;padding:12px 0;color:var(--accent-strong);}
 .hint {font-size:13px;line-height:1.6;color:var(--text-muted);border-left:2px solid var(--accent);padding-left:12px;margin:0;}
+
+.sharedCurve {display:grid;gap:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:14px;min-width:0;}
+.sharedCurve p {margin:0;font-size:13px;line-height:1.6;}
+.sharedCurve small {color:var(--text-muted);line-height:1.5;}
+.sharedDirections {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;}
+.sharedDirections figure {margin:0;min-width:0;}
+.sharedDirections figcaption {font-size:13px;font-weight:600;color:var(--text-muted);}
+.sharedDirections svg {display:block;width:100%;height:auto;max-height:92px;}
+.sharedDirections path {fill:none;stroke:var(--accent-strong);stroke-width:2;vector-effect:non-scaling-stroke;}
+.sharedDirections circle {fill:var(--accent-strong);}
+.sharedDirections .readout {font-size:12px;overflow-wrap:anywhere;}
+@container (max-width:360px) {.sharedDirections {grid-template-columns:1fr;}}
