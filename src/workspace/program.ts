@@ -21,11 +21,13 @@ export const defaultAction = (domain:string):SetStep => ({kind:'set',action:doma
 export const pointDefaults = [{position:-18,brightness_pct:1,kelvin:2702},{position:-12,brightness_pct:10,kelvin:3000},{position:-6,brightness_pct:45,kelvin:4000},{position:0,brightness_pct:100,kelvin:5500}]
 export const blankCurve = ():CurveControl => ({kind:'curve',driver:'sun_elevation',solar_direction:'rising',color_mode:'white',max_age_seconds:1800,points:structuredClone(pointDefaults),initial_brightness_pct:1,initial_kelvin:2702,startup_minutes:10,respect_manual_off:true})
 export function preset(name:string,controller:SemanticController):Program {
+    const white=controller.entities.filter(d=>controller.bindings.targets.includes(d.device_id)).every(d=>d.capabilities?.color_temp?.supported)
+    const curve=():CurveControl=>({...blankCurve(),color_mode:white?'white':'brightness'})
     const base:Program={version:2,timing:{mode:'events',triggers:[{kind:'anchor',key:'start',anchor:clock('08:00')}]},conditions:emptyGroup(),control:{kind:'sequence',steps:[defaultAction(controller.domain)]},end_action:'hold',condition_failure:'hold',max_run_minutes:720}
     if(name==='band') return {...base,timing:{mode:'always'},control:{kind:'band',sensor_ids:controller.bindings.sensor_ids || [],aggregation:'maximum',demand:'above',lower:52,upper:55,min_cycle_seconds:180,max_age_seconds:1800},end_action:'off',condition_failure:'off'}
-    if(name==='dawn') return {...base,timing:{mode:'window',start:clock('06:00'),end:clock('12:00')},control:blankCurve()}
+    if(name==='dawn') return {...base,timing:{mode:'window',start:clock('06:00'),end:clock('12:00')},control:curve()}
     if(name==='dusk') return {...base,timing:{mode:'window',start:{event:'sunset',offset_minutes:0},end:{event:'elevation',elevation:-20,direction:'setting'}},max_run_minutes:360,
-        control:{...blankCurve(),solar_direction:'setting',initial_brightness_pct:100,initial_kelvin:5500,startup_minutes:1,points:[...structuredClone(pointDefaults).reverse().map(p=>p.position===-18?{...p,brightness_pct:5}:p),{position:-20,brightness_pct:1,kelvin:2702}]}}
+        control:{...curve(),solar_direction:'setting',initial_brightness_pct:100,initial_kelvin:5500,startup_minutes:1,points:[...structuredClone(pointDefaults).reverse().map(p=>p.position===-18?{...p,brightness_pct:5}:p),{position:-20,brightness_pct:1,kelvin:2702}]}}
     if(name==='schedule') return {...base,timing:{mode:'window',start:clock('08:00'),end:clock('22:00')},control:{kind:'switch'},end_action:'off',condition_failure:'off'}
     if(name==='cleaning') return {...base,timing:{mode:'events',triggers:[{kind:'anchor',key:'clean',anchor:clock('10:00')}]}}
     return base
