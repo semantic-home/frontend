@@ -3,7 +3,7 @@ import type {FormEvent} from 'react'
 import {httpPost, httpPut} from '../api/http.ts'
 import type {Automation, Home, Preview, SemanticController, Spec} from './types.ts'
 import type {Anchor, BandControl, Condition, Control, CurveControl, EventTrigger, Group, Program, SetStep, Step, Timing} from './program.ts'
-import {anchorText, blankCurve, clock, defaultAction, emptyGroup, fromLegacy, preset, programDescription, programText, programValid} from './program.ts'
+import {anchorText, blankCurve, briefLightingRule, clock, defaultAction, emptyGroup, fromLegacy, preset, programDescription, programValid} from './program.ts'
 import {DevicePicker} from './DevicePicker.tsx'
 import {errorText} from './shared.ts'
 import s from './Workspace.module.css'
@@ -19,17 +19,18 @@ function NumberField({label,value,change,min,max,step=1}:{label:string;value:num
 
 export function AnchorEditor({label,value,change,end=false}:{label:string;value:Anchor;change:(a:Anchor)=>void;end?:boolean}) {
     const choose=(event:Anchor['event'])=>change(event==='clock'?clock(end?'22:00':'06:00'):event==='elevation'?{event,elevation:end?-20:-18,direction:end?'setting':'rising'}:event==='elapsed'?{event,minutes:60}:{event,offset_minutes:0})
+    const phases=[[-6,'Civil twilight'],[-12,'Nautical twilight'],[-18,'End of astronomical twilight'],[-20,'After astronomical twilight']] as const
     return <fieldset className={c.anchor}><legend>{label}</legend>
-        <label className={s.field}>{label} anchor<select value={value.event} onChange={e=>choose(e.target.value as Anchor['event'])}>
-            <option value="clock">Clock time</option><option value="sunrise">Sunrise</option><option value="sunset">Sunset</option><option value="elevation">Sun elevation / twilight</option>{end&&<option value="elapsed">Duration after start</option>}
+        <label className={s.field}>{label} at<select value={value.event} onChange={e=>choose(e.target.value as Anchor['event'])}>
+            <option value="clock">A clock time</option><option value="sunrise">Sunrise</option><option value="sunset">Sunset</option><option value="elevation">A twilight phase</option>{end&&<option value="elapsed">After a duration</option>}
         </select></label>
         {value.event==='clock'?<label className={s.field}>{label} time<input type="time" required value={value.at || ''} onChange={e=>change({...value,at:e.target.value})}/></label>
             :value.event==='elapsed'?<NumberField label={`${label} after (minutes)`} min={1} max={1440} value={value.minutes || 0} change={minutes=>change({...value,minutes})}/>
-            :value.event==='elevation'?<><label className={s.field}>{label} sun direction<select value={value.direction || 'setting'} onChange={e=>change({...value,direction:e.target.value as 'rising'|'setting'})}><option value="rising">Rising · morning</option><option value="setting">Setting · evening</option></select></label>
-                <NumberField label={`${label} sun elevation (°)`} min={-89} max={89} step={0.1} value={value.elevation || 0} change={elevation=>change({...value,elevation})}/>
-                <p className={s.muted}>Civil: −6° · nautical: −12° · astronomical: −18°. A setting sun below −18° is past astronomical twilight.</p></>
-                :<NumberField label={`${label} offset (minutes)`} min={-180} max={180} value={value.offset_minutes || 0} change={offset_minutes=>change({...value,offset_minutes})}/>}
-        {(value.event==='sunrise'||value.event==='sunset')&&<p className={s.muted}>Negative = before · positive = after. The event follows this home’s Home Assistant location.</p>}
+            :value.event==='elevation'?<><label className={s.field}>{label} twilight phase<select value={String(value.elevation)} onChange={e=>change({...value,elevation:Number(e.target.value)})}>
+                {phases.map(([angle,name])=><option key={angle} value={angle}>{name}</option>)}{!phases.some(([angle])=>angle===value.elevation)&&<option value={String(value.elevation)}>Custom · {value.elevation}°</option>}
+            </select></label><label className={s.field}>{label} part of day<select value={value.direction || 'setting'} onChange={e=>change({...value,direction:e.target.value as 'rising'|'setting'})}><option value="rising">Morning</option><option value="setting">Evening</option></select></label>
+                <details className={c.details}><summary>Use a custom sun angle</summary><NumberField label={`${label} sun elevation (°)`} min={-89} max={89} step={0.1} value={value.elevation || 0} change={elevation=>change({...value,elevation})}/><p className={s.muted}>Civil −6° · nautical −12° · astronomical −18°. Lower evening angles happen later.</p></details></>
+                :<details className={c.details}><summary>Adjust timing · {value.offset_minutes?anchorText(value):'at the event'}</summary><NumberField label={`${label} offset (minutes)`} min={-180} max={180} value={value.offset_minutes || 0} change={offset_minutes=>change({...value,offset_minutes})}/><p className={s.muted}>Negative = before · positive = after.</p></details>}
     </fieldset>
 }
 
@@ -119,35 +120,37 @@ function BandFields({value,change,context}:{value:BandControl;change:(v:BandCont
             <label className={s.field}>Run outputs when<select value={value.demand} onChange={e=>change({...value,demand:e.target.value as 'above'|'below'})}><option value="above">The measurement is too high</option><option value="below">The measurement is too low</option></select></label></div>
         <div className={s.split}><NumberField label="Lower threshold (sensor units)" step={0.1} value={value.lower} change={lower=>change({...value,lower})}/><NumberField label="Upper threshold (sensor units)" step={0.1} value={value.upper} change={upper=>change({...value,upper})}/></div>
         <p className={s.muted}>Between the thresholds, keep the current state. {value.demand==='above'?`Switch on at ${value.upper} or above, off at ${value.lower} or below.`:`Switch on at ${value.lower} or below, off at ${value.upper} or above.`} All selected measurements must be fresh and use the same units.</p>
-        <div className={s.split}><NumberField label="Minimum switching interval (seconds)" min={0} max={86400} value={value.min_cycle_seconds} change={min_cycle_seconds=>change({...value,min_cycle_seconds})}/>
+        <details className={c.details}><summary>Sensor reporting and switching protection</summary><div className={s.split}><NumberField label="Minimum switching interval (seconds)" min={0} max={86400} value={value.min_cycle_seconds} change={min_cycle_seconds=>change({...value,min_cycle_seconds})}/>
             <NumberField label="Maximum measurement age (minutes)" min={1} max={1440} value={value.max_age_seconds/60} change={n=>change({...value,max_age_seconds:n*60})}/></div>
-        <p className={s.muted}>This age limit must exceed the sensors’ normal reporting interval. A stale measurement forces the outputs off, even when the other readings still call for running.</p>
+        <p className={s.muted}>This age limit must exceed the sensors’ normal reporting interval. A stale measurement forces the outputs off, even when the other readings still call for running.</p></details>
     </>
 }
 
 function CurveFields({value,change,context}:{value:CurveControl;change:(v:CurveControl)=>void;context:Context}) {
     const outputs=context.controller.entities.filter(d=>context.controller.bindings.targets.includes(d.device_id))
     const point=(i:number,patch:Partial<CurveControl['points'][number]>)=>change({...value,points:value.points.map((p,n)=>n===i?{...p,...patch}:p)})
-    return <><label className={s.field}>Curve input<select value={value.driver} onChange={e=>{const driver=e.target.value as CurveControl['driver'];change({...value,driver,sensor_id:driver==='measurement'?'':null,points:driver==='sun_elevation'?blankCurve().points:[{position:0,brightness_pct:1,kelvin:2702},{position:60,brightness_pct:100,kelvin:5500}]})}}>
-            <option value="sun_elevation">Real sun elevation</option><option value="elapsed_minutes">Minutes since the start</option><option value="measurement">A sensor measurement</option></select></label>
-        {value.driver==='sun_elevation'&&<label className={s.field}>Solar motion<select value={value.solar_direction} onChange={e=>change({...value,solar_direction:e.target.value as CurveControl['solar_direction']})}><option value="rising">Follow the rising sun; hold during the opposite phase</option><option value="setting">Follow the setting sun; hold during the opposite phase</option><option value="any">Follow both directions</option></select></label>}
+    return <><label className={s.field}>Change the lights with<select value={value.driver} onChange={e=>{const driver=e.target.value as CurveControl['driver'];change({...value,driver,sensor_id:driver==='measurement'?'':null,points:driver==='sun_elevation'?blankCurve().points:[{position:0,brightness_pct:1,kelvin:2702},{position:60,brightness_pct:100,kelvin:5500}]})}}>
+            <option value="sun_elevation">Natural daylight</option><option value="elapsed_minutes">Time since switch-on</option><option value="measurement">A sensor reading</option></select></label>
+        {value.driver==='sun_elevation'&&<label className={s.field}>Daylight pattern<select value={value.solar_direction} onChange={e=>change({...value,solar_direction:e.target.value as CurveControl['solar_direction']})}><option value="rising">Morning (dawn)</option><option value="setting">Evening (dusk)</option><option value="any">Morning and evening</option></select></label>}
         {value.driver==='measurement'&&<><InputPicker context={context} label="Curve measurement" numeric value={value.sensor_id?[value.sensor_id]:[]} change={ids=>change({...value,sensor_id:ids[0] || ''})}/><NumberField label="Curve measurement age limit (minutes)" min={1} max={1440} value={value.max_age_seconds/60} change={n=>change({...value,max_age_seconds:n*60})}/></>}
+        <NumberField label="Brightness at switch-on (%)" min={1} max={100} value={value.initial_brightness_pct} change={initial_brightness_pct=>change({...value,initial_brightness_pct})}/>
+        <p className={c.hint}>This rule switches the lights on at its start and can switch them off at its end. A separate on/off rule is not needed.</p>
+        <details className={c.details}><summary>Fine-tune the light · {value.points.length} curve points</summary><div className={c.advancedBody}>
         <label className={s.field}>Adjust<select value={value.color_mode} onChange={e=>change({...value,color_mode:e.target.value as CurveControl['color_mode']})}><option value="brightness">Brightness only</option>{outputs.every(d=>d.capabilities?.color_temp?.supported)&&<option value="white">Brightness and white temperature</option>}</select></label>
-        <div className={s.split}><NumberField label="Initial brightness (%)" min={1} max={100} value={value.initial_brightness_pct} change={initial_brightness_pct=>change({...value,initial_brightness_pct})}/>
-            {value.color_mode==='white'&&<NumberField label="Initial white (K)" min={1000} max={10000} value={value.initial_kelvin} change={initial_kelvin=>change({...value,initial_kelvin})}/>}<NumberField label="Gentle start (minutes)" min={0} max={120} value={value.startup_minutes} change={startup_minutes=>change({...value,startup_minutes})}/></div>
-        <p className={s.muted}>At the start event, use the initial level. Then follow the curve, blending smoothly during the gentle start. Passed phases are not replayed.</p>
-        <details className={c.details}><summary>Edit curve points · {value.points.length} anchors</summary><div className={c.curvePoints}>{value.points.map((p,i)=><fieldset className={c.point} key={i}><legend>Point {i+1}</legend>
+        <div className={s.split}>{value.color_mode==='white'&&<NumberField label="White temperature at switch-on (K)" min={1000} max={10000} value={value.initial_kelvin} change={initial_kelvin=>change({...value,initial_kelvin})}/>}
+            <NumberField label="Blend into the curve over (minutes)" min={0} max={120} value={value.startup_minutes} change={startup_minutes=>change({...value,startup_minutes})}/></div>
+        <div className={c.curvePoints}>{value.points.map((p,i)=><fieldset className={c.point} key={i}><legend>Point {i+1}</legend>
             <NumberField label={value.driver==='sun_elevation'?`Point ${i+1} sun elevation (°)`:value.driver==='elapsed_minutes'?`Point ${i+1} elapsed minutes`:`Point ${i+1} sensor value`} step={0.1} value={p.position} change={position=>point(i,{position})}/>
             <NumberField label={`Point ${i+1} brightness (%)`} min={1} max={100} value={p.brightness_pct} change={brightness_pct=>point(i,{brightness_pct})}/>
             {value.color_mode==='white'&&<NumberField label={`Point ${i+1} white (K)`} min={1000} max={10000} value={p.kelvin} change={kelvin=>point(i,{kelvin})}/>}<button type="button" disabled={value.points.length<=2} onClick={()=>change({...value,points:value.points.filter((_,n)=>n!==i)})}>Remove point</button>
         </fieldset>)}</div>
         <button type="button" disabled={value.points.length>=16} onClick={()=>{let position=value.points.at(-1)!.position+(value.solar_direction==='setting'?-2:6);while(value.points.some(p=>p.position===position)) position+=1;change({...value,points:[...value.points,{position,brightness_pct:1,kelvin:2702}]})}}>+ Curve point</button>
-        <p className={s.muted}>Values blend between points and hold at the nearest endpoint outside the range. Brightness can rise, fall or do both. White temperature is clamped to each lamp’s supported range.</p></details>
-        <label className={c.check}><input type="checkbox" checked={value.respect_manual_off} onChange={e=>change({...value,respect_manual_off:e.target.checked})}/>Respect a manual switch-off until the next start</label>
+        <p className={s.muted}>Values blend between points and hold at the nearest endpoint outside the range. Brightness can rise, fall or do both. White temperature is clamped to each lamp’s supported range.</p>
+        <label className={c.check}><input type="checkbox" checked={value.respect_manual_off} onChange={e=>change({...value,respect_manual_off:e.target.checked})}/>Respect a manual switch-off until the next start</label></div></details>
     </>
 }
 
-function PreviewPanel({preview,timezone}:{preview:Preview;timezone:string}) {
+function PreviewPanel({preview,timezone,showWhite}:{preview:Preview;timezone:string;showWhite:boolean}) {
     const p=preview.program
     const [sample,setSample]=useState(0)
     if(!p) return null
@@ -156,6 +159,8 @@ function PreviewPanel({preview,timezone}:{preview:Preview;timezone:string}) {
     const from=timeline?new Date(timeline.start).getTime():0,to=timeline?new Date(timeline.stop).getTime():1
     const x=(at:string)=>(new Date(at).getTime()-from)/(to-from || 1)*460
     const path=samples.map((pt,i)=>`${i?'L':'M'}${x(pt.at).toFixed(1)},${120-pt.brightness_pct*1.2}`).join(' ')
+    const executionNotes=p.warnings.filter(w=>w.startsWith('This event window')||w.startsWith('Control stops')||w.startsWith('Event rules run'))
+    const warnings=p.warnings.filter(w=>!executionNotes.includes(w))
     const messages:Record<string,string>={outside_window:'Outside the permitted hours',sensor_unavailable:'A selected reading is missing or stale',upper_threshold:'Upper threshold reached',lower_threshold:'Lower threshold reached',condition_not_met:'An extra condition is not satisfied',keep_state:'Keep the current state between thresholds',program_event:'Runs at the selected event',time_window:'Window determines the output'}
     return <section className={c.preview} aria-label="Rule preview" aria-live="polite"><h3>Preview · no device commands</h3>
         <p className={s.muted}>{p.connection_name} · {p.location_name || 'Home location not reported'} · {timezone}<br/>Conditions now: {p.conditions_met?'satisfied':'not satisfied, or waiting for an event'}</p>
@@ -163,11 +168,12 @@ function PreviewPanel({preview,timezone}:{preview:Preview;timezone:string}) {
             {[0,50,100].map(v=><g key={v}><text x={-8} y={124-v*1.2} textAnchor="end">{v}%</text><line x1="0" x2="460" y1={120-v*1.2} y2={120-v*1.2}/></g>)}
             <path d={path}/><text x="0" y="143">{clockAt(timeline.start)}</text><text x="460" y="143" textAnchor="end">{clockAt(timeline.stop)}</text>
         </svg></div><label className={s.field}>Explore the curve<input type="range" min={0} max={samples.length-1} value={Math.min(sample,samples.length-1)} onChange={e=>setSample(Number(e.target.value))}/></label>
-            {selected&&<p className={c.readout}><strong>{clockAt(selected.at)}</strong> · {selected.brightness_pct===0?'Switch off':`${selected.brightness_pct}% brightness · ${selected.kelvin} K`} · input {selected.input}</p>}</>}
+            {selected&&<p className={c.readout}><strong>{clockAt(selected.at)}</strong> · {selected.brightness_pct===0?'Switch off':`${selected.brightness_pct}% brightness${showWhite?` · ${selected.kelvin} K`: ''}`}</p>}</>}
         {p.events.length>0&&<ol className={c.events}>{p.events.slice(0,6).map((event,i)=><li key={`${event.at}-${i}`}><span>{event.event}</span><strong>{new Date(event.at).toLocaleDateString('en-GB',{timeZone:timezone,day:'numeric',month:'short'})} · {clockAt(event.at)}</strong></li>)}</ol>}
         {p.measurements.map(m=><p key={m.id} className={m.valid?s.muted:s.error}>{m.name}: {m.value??'No numeric value'} · {m.age_seconds===null?'Report time unknown':`${Math.floor(m.age_seconds/60)} min old`} · {m.valid?'Fresh':m.issue==='stale'?'Stale — cannot use this reading':'Unavailable or invalid'} (limit {m.max_age_seconds/60} min)</p>)}
         {preview.items.map(item=><p key={item.id}><strong>{item.name}</strong> · {item.desired==='scheduled'?'Scheduled':item.desired==='on'?'On':item.desired==='off'?'Off':item.desired} · {messages[item.reason] || item.reason}</p>)}
-        {p.warnings.map(w=><p className={s.notice} key={w}>{w}</p>)}
+        {warnings.map(w=><p className={s.notice} key={w}>{w}</p>)}
+        {executionNotes.length>0&&<details className={c.details}><summary>Execution and restart details</summary>{executionNotes.map(w=><p className={s.muted} key={w}>{w}</p>)}</details>}
         <p className={s.muted}>These are requested effects. Availability, identity checks and switching intervals still apply. Actual device states appear in Activity.</p>
     </section>
 }
@@ -202,32 +208,35 @@ export function ProgramRuleEditor({home,controller,rule,done,cancel}:{home:Home;
         {rule&&rule.spec.kind!=='program'&&<p className={s.notice}>Your saved rule has been copied into the reusable editor. Review its timing and preview before saving. The stored rule changes only when you save this draft.</p>}
         <form className={s.form} onSubmit={save}>
             <label className={s.field}>Rule name<input required maxLength={100} value={name} onChange={e=>setName(e.target.value)}/></label>
-            <div className={c.presets}><label className={s.field}>Start from a preset<select value={chosenPreset} onChange={e=>setChosenPreset(e.target.value)}><option value="">Choose a starting point …</option>{switchable&&<><option value="schedule">On / off schedule</option><option value="band">Maintain a measurement range</option></>}{dimmable&&<><option value="dawn">Natural dawn</option><option value="dusk">Natural dusk</option></>}<option value="custom">Custom event and actions</option>{controller.domain==='cleaning'&&<option value="cleaning">Scheduled cleaning</option>}</select></label><button type="button" disabled={!chosenPreset} onClick={()=>{const next=preset(chosenPreset,controller);if(next.control.kind==='curve'&&!outputs.every(d=>d.capabilities?.color_temp?.supported))next.control.color_mode='brightness';update(next);setChosenPreset('')}}>Load preset</button></div>
+            <label className={s.field}>What should happen?<select value={control.kind} onChange={e=>changeControl(e.target.value as Control['kind'])}>{switchable&&<><option value="switch">Switch on during a period</option><option value="band">Maintain a measurement range</option></>}{dimmable&&<option value="curve">Gradually adjust the lights</option>}<option value="sequence">Run action steps</option></select></label>
+            <details className={c.details}><summary>Use a starting point</summary><div className={c.presets}><label className={s.field}>Start from a preset<select value={chosenPreset} onChange={e=>setChosenPreset(e.target.value)}><option value="">Choose a starting point …</option>{switchable&&<><option value="schedule">On / off schedule</option><option value="band">Maintain a measurement range</option></>}{dimmable&&<><option value="dawn">Natural dawn</option><option value="dusk">Natural dusk</option></>}<option value="custom">Custom event and actions</option>{controller.domain==='cleaning'&&<option value="cleaning">Scheduled cleaning</option>}</select></label><button type="button" disabled={!chosenPreset} onClick={()=>{const next=preset(chosenPreset,controller);if(next.control.kind==='curve'&&!outputs.every(d=>d.capabilities?.color_temp?.supported))next.control.color_mode='brightness';update(next);setChosenPreset('')}}>Load preset</button></div>
             <p className={s.muted}>A preset fills the editable parts below. Change its events, inputs, conditions and behaviour to make your own rule.</p>
-            <div className={s.sentence} aria-live="polite"><strong>Rule in words</strong><p>{programDescription(program,Object.fromEntries(controller.entities.map(d=>[d.device_id,d.name])))}</p><small>{programText(program)}</small></div>
-            <fieldset className={c.section}><legend>When</legend>
-                {control.kind!=='sequence'&&<label className={s.field}>Operating period<select value={timing.mode} onChange={e=>timingChange(e.target.value==='always'?{mode:'always'}:{mode:'window',start:clock('06:00'),end:clock('22:00')})}>{control.kind!=='curve'&&<option value="always">All day on selected days</option>}<option value="window">Between two anchors</option></select></label>}
+            </details>
+            <div className={s.sentence} aria-live="polite"><strong>Rule in words</strong><p>{briefLightingRule(program)||programDescription(program,Object.fromEntries(controller.entities.map(d=>[d.device_id,d.name])))}</p>{control.kind==='curve'&&program.conditions.terms.length>0&&<small>Only when the conditions below are satisfied.</small>}</div>
+            <fieldset className={c.section}><legend>When should it run?</legend>
+                {(control.kind==='band'||control.kind==='switch')&&<label className={s.field}>Run this rule<select value={timing.mode} onChange={e=>timingChange(e.target.value==='always'?{mode:'always'}:{mode:'window',start:clock('06:00'),end:clock('22:00')})}><option value="always">All day</option><option value="window">Only during set hours / events</option></select></label>}
                 {timing.mode==='window'&&<div className={c.anchors}><AnchorEditor label="Start" value={timing.start} change={start=>timingChange({...timing,start})}/><AnchorEditor label="End" end value={timing.end} change={end=>timingChange({...timing,end})}/></div>}
+                {control.kind!=='sequence'&&<label className={s.field}>At the end<select value={program.end_action} onChange={e=>update({...program,end_action:e.target.value as Program['end_action']})}><option value="hold">{control.kind==='curve'?'Stop adjusting; keep the last level':'Leave the last state'}</option><option value="off">Switch off</option></select></label>}
                 {timing.mode==='events'&&<>{timing.triggers.map((trigger,i)=><TriggerEditor key={trigger.key} index={i} context={context} value={trigger} change={t=>timingChange({...timing,triggers:timing.triggers.map((x,n)=>n===i?t:x)})} remove={()=>timingChange({...timing,triggers:timing.triggers.filter((_,n)=>n!==i)})}/>)}<button type="button" disabled={timing.triggers.length>=16} onClick={()=>timingChange({...timing,triggers:[...timing.triggers,{kind:'anchor',key:crypto.randomUUID(),anchor:clock('08:00')}]})}>+ Start event</button><p className={s.muted}>Any event can start this rule. A threshold trigger reacts to a crossing, rather than continuously enforcing a value. Use range control for continuous regulation.</p></>}
-                <div className={s.field}><span>Active days · local start date</span><div className={s.days}>{days.map((day,i)=><button type="button" key={day} aria-pressed={weekdays.includes(i)} className={weekdays.includes(i)?s.active:''} onClick={()=>setWeekdays(weekdays.includes(i)?weekdays.filter(n=>n!==i):[...weekdays,i].sort())}>{day}</button>)}</div></div>
+                <details className={c.details}><summary>Repeat · {weekdays.length===7?'Every day':weekdays.map(i=>days[i]).join(', ')||'Choose days'}</summary><div className={s.field}><span>Active days · local start date</span><div className={s.days}>{days.map((day,i)=><button type="button" key={day} aria-pressed={weekdays.includes(i)} className={weekdays.includes(i)?s.active:''} onClick={()=>setWeekdays(weekdays.includes(i)?weekdays.filter(n=>n!==i):[...weekdays,i].sort())}>{day}</button>)}</div></div></details>
             </fieldset>
-            <fieldset className={c.section}><legend>Behaviour</legend><label className={s.field}>How to control the outputs<select value={control.kind} onChange={e=>changeControl(e.target.value as Control['kind'])}>{switchable&&<><option value="switch">Switch while active</option><option value="band">Maintain a measurement range</option></>}{dimmable&&<option value="curve">Follow an editable curve</option>}<option value="sequence">Run action steps</option></select></label>
+            <fieldset className={c.section}><legend>{control.kind==='curve'?'How should the light change?':'What should it do?'}</legend>
                 {control.kind==='band'?<BandFields value={control} context={context} change={v=>update({...program,control:v})}/>:control.kind==='curve'?<CurveFields value={control} context={context} change={v=>update({...program,control:v})}/>:control.kind==='sequence'?<StepEditor context={context} value={control.steps} change={steps=>update({...program,control:{...control,steps}})}/>:<>
                     <p className={s.muted}>Keep the outputs on while the timing and extra conditions allow it. With force-off selected, check again every minute and whenever an output turns on.</p>
                     {dimmable&&<label className={s.field}>Brightness (optional, %)<input type="number" min={1} max={100} value={control.brightness_pct??''} onChange={e=>update({...program,control:{...control,brightness_pct:e.target.value?Number(e.target.value):null}})}/></label>}
                 </>}
             </fieldset>
-            <fieldset className={c.section}><legend>Only if</legend><ConditionEditor context={context} value={program.conditions} change={conditions=>update({...program,conditions})}/><p className={s.muted}>All numeric condition inputs must be fresh, including inside Any and Not groups.</p></fieldset>
-            <fieldset className={c.section}><legend>Limits and overrides</legend>
-                {control.kind!=='sequence'&&<label className={s.field}>When the permitted period ends<select value={program.end_action} onChange={e=>update({...program,end_action:e.target.value as Program['end_action']})}><option value="hold">Stop controlling; leave the last state</option><option value="off">Force outputs off</option></select></label>}
+            <details className={c.optional} open={program.conditions.terms.length>0}><summary>Only if… · {program.conditions.terms.length?`${program.conditions.terms.length} condition${program.conditions.terms.length===1?'':'s'}`:'optional conditions'}</summary><div className={c.advancedBody}><ConditionEditor context={context} value={program.conditions} change={conditions=>update({...program,conditions})}/><p className={s.muted}>All numeric condition inputs must be fresh, including inside Any and Not groups.</p></div></details>
+            <details className={c.optional}><summary>Advanced · limits and overrides</summary><div className={c.advancedBody}>
+
                 <label className={s.field}>If extra conditions are not satisfied<select value={program.condition_failure} onChange={e=>update({...program,condition_failure:e.target.value as Program['condition_failure']})}><option value="hold">Send no new command</option>{switchable&&<option value="off">Force outputs off</option>}</select></label>
                 {(timing.mode==='events'||(timing.mode==='window'&&!(timing.start.event==='clock'&&timing.end.event==='clock')))&&<NumberField label={timing.mode==='events'?'Maximum total waits (minutes)':'Stop the event window after at most (minutes)'} min={1} max={1440} value={program.max_run_minutes} change={max_run_minutes=>update({...program,max_run_minutes})}/>}
                 <p className={s.muted}>{timing.mode==='events'?'Action steps run in order. After an HA restart, the next matching event starts a new run.':timing.mode==='always'||(timing.mode==='window'&&timing.start.event==='clock'&&timing.end.event==='clock')?'Clock-based control resumes locally after an HA restart. Curves resume only lamps that are already on.':'Solar event windows run locally until their end event or time limit. After an HA restart/reload, they wait for the next start event.'}</p>
-            </fieldset>
+            </div></details>
             <p className={s.muted}>Outputs: {outputs.map(d=>d.name).join(' · ')}<br/>Times and solar events use {home.timezone}. Saving a draft and previewing send no device commands.</p>
             {!valid&&<p className={s.notice}>Complete the inputs, timing and steps to preview and save. Curve positions must be distinct; lower thresholds must be below upper thresholds.</p>}
             {preview?.error&&<p className={s.error} role="alert">{preview.error}</p>}{valid&&!preview&&<p role="status">Calculating the rule preview …</p>}
-            {preview?.preview&&<PreviewPanel key={key} preview={preview.preview} timezone={home.timezone}/>}
+            {preview?.preview&&<PreviewPanel key={key} preview={preview.preview} timezone={home.timezone} showWhite={control.kind==='curve'&&control.color_mode==='white'}/>}
             {error&&<p className={s.error} role="alert">{error}</p>}
             <div className={s.row}><button className={s.primary} type="submit" disabled={!valid||busy}>{busy?'Saving …':'Save Draft'}</button><button type="button" onClick={cancel}>Cancel</button></div>
         </form>

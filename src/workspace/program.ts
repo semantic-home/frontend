@@ -64,7 +64,19 @@ export function anchorText(a:Anchor) {
     const offset=a.offset_minutes || 0
     return offset?`${Math.abs(offset)} min ${offset<0?'before':'after'} ${a.event}`:a.event
 }
+export function briefLightingRule(program:Program) {
+    const t=program.timing,c=program.control
+    if(c.kind!=='curve'||t.mode!=='window')return null
+    const when=(a:Anchor)=>a.event==='elevation'?`${a.elevation===-20?'after astronomical twilight':a.elevation===-18?'at the end of astronomical twilight':a.elevation===-12?'at nautical twilight':a.elevation===-6?'at civil twilight':`at ${a.elevation}° sun`} (${a.direction==='rising'?'morning':'evening'})`:`at ${anchorText(a)}`
+    const ordered=[...c.points].sort((a,b)=>a.position-b.position)
+    const natural=ordered[0].brightness_pct<ordered.at(-1)!.brightness_pct&&ordered.every((p,i)=>i===0||p.brightness_pct>=ordered[i-1].brightness_pct)
+    const effect=c.driver==='sun_elevation'?(!natural?'Follow the custom daylight curve':c.solar_direction==='setting'?'Dim with the evening light':c.solar_direction==='rising'?'Brighten with the morning light':'Follow morning and evening light'):c.driver==='elapsed_minutes'?'Change gradually after switch-on':'Adjust to the selected sensor'
+    return `Switch on ${when(t.start)} at ${c.initial_brightness_pct}%. ${effect}. ${when(t.end)[0].toUpperCase()+when(t.end).slice(1)}, ${program.end_action==='off'?'switch off':'stop adjusting and keep the last level'}.`
+}
+
 export function programText(p:Program) {
+    const lighting=briefLightingRule(p)
+    if(lighting)return lighting
     const c=p.control,t=p.timing
     const timing=t.mode==='always'?'All day':t.mode==='window'?`${anchorText(t.start)} → ${anchorText(t.end)}`:`${t.triggers.length} event${t.triggers.length===1?'':'s'}`
     return `${c.kind==='band'?`Maintain ${c.lower}–${c.upper} · ${c.aggregation} measurement`:c.kind==='curve'?`Follow ${c.driver.replaceAll('_',' ')} · ${c.points.length} curve points`:c.kind==='switch'?'Switch while active':`${c.steps.length} action step${c.steps.length===1?'':'s'}`} · ${timing}`

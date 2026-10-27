@@ -30,3 +30,8 @@
 .details {display:grid;gap:14px;min-width:0;}
 .details summary {cursor:pointer;padding:12px 0;color:var(--accent-strong);font-weight:600;}
 .details[open] .curvePoints {margin-top:12px;}
+
+.advancedBody {display:grid;gap:16px;padding:12px 0;}
+.optional {border-top:1px solid var(--border);padding:8px 0;}
+.optional > summary {cursor:pointer;font-weight:600;padding:12px 0;color:var(--accent-strong);}
+.hint {font-size:13px;line-height:1.6;color:var(--text-muted);border-left:2px solid var(--accent);padding-left:12px;margin:0;}
