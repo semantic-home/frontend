@@ -46,6 +46,11 @@
 .timingPoint {border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: grid; gap: 16px; min-width: 0; margin: 0;}
 .timingPoint legend {padding: 0 6px; font-weight: 600;}
 .timingPoint legend svg {vertical-align: middle; color: var(--accent-strong);}
+.humiditySchedule {border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 12px;}
+.humiditySchedule legend {padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 600;}
+.humiditySchedule p {margin: 0;}
+.scheduleToggle {display: flex; align-items: center; gap: 10px; min-height: 32px; font-size: 14px; cursor: pointer;}
+.scheduleToggle input {margin: 0;}
 .solarPreview {border: 1px solid var(--border-strong); border-radius: 12px; padding: 20px; background: var(--surface-2); min-width: 0;}
 .solarPreview > .row {margin-top: 0;}
 .sunTimes {display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;}
