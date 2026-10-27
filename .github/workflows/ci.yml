@@ -28,6 +28,9 @@ jobs:
       - name: Run linter
         run: npm run lint
 
+      - name: Test rule editor behavior
+        run: npm run test:program
+
       - name: Build application
         run: npm run build
 

@@ -2,8 +2,8 @@ import {useEffect, useState} from 'react'
 import type {FormEvent} from 'react'
 import {httpPost, httpPut} from '../api/http.ts'
 import type {Automation, Home, Preview, SemanticController, Spec} from './types.ts'
-import type {Anchor, BandControl, Condition, Control, CurveControl, EventTrigger, Group, Program, SetStep, Step, Timing} from './program.ts'
-import {anchorText, blankCurve, briefLightingRule, clock, defaultAction, emptyGroup, fromLegacy, preset, programDescription, programValid} from './program.ts'
+import type {Anchor, BandControl, Condition, Control, CurveControl, CurvePoint, EventTrigger, Group, Program, SetStep, Step, Timing} from './program.ts'
+import {anchorText, blankCurve, briefLightingRule, clock, darkPoint, defaultAction, emptyGroup, fromLegacy, preset, programDescription, programValid, withNightBrightness} from './program.ts'
 import {DevicePicker} from './DevicePicker.tsx'
 import {errorText} from './shared.ts'
 import s from './Workspace.module.css'
@@ -127,12 +127,12 @@ function BandFields({value,change,context}:{value:BandControl;change:(v:BandCont
 }
 
 function SharedDaylightCurve({value}:{value:CurveControl}) {
-    const points=value.points.filter(p=>Number.isFinite(p.position)&&Number.isFinite(p.brightness_pct)).sort((a,b)=>a.position-b.position)
-    const low=points[0]?.position||0,span=(points.at(-1)?.position||0)-low||1
-    return <section className={c.sharedCurve} aria-label="Shared morning and evening curve">
-        <strong>One shared curve for morning and evening</strong>
-        <p>Changing a point changes both periods. The morning follows these points as the sun rises; the evening follows the same points in reverse as the sun sets.</p>
+    return <section className={c.sharedCurve} aria-label="Morning and evening curves">
+        <strong>{value.evening_points?'Independent morning and evening curves':'One shared curve for morning and evening'}</strong>
+        <p>{value.evening_points?'Morning and evening have their own points. Changing one does not change the other.':'Changing a point changes both periods. The morning follows these points as the sun rises; the evening follows the same points in reverse as the sun sets.'}</p>
         <div className={c.sharedDirections}>{(['Morning','Evening'] as const).map(period=>{
+            const points=(period==='Evening'&&value.evening_points?value.evening_points:value.points).filter(p=>Number.isFinite(p.position)&&Number.isFinite(p.brightness_pct)).sort((a,b)=>a.position-b.position)
+            const low=points[0]?.position||0,span=(points.at(-1)?.position||0)-low||1
             const ordered=period==='Morning'?points:[...points].reverse()
             const x=(position:number)=>12+(period==='Morning'?(position-low)/span:1-(position-low)/span)*156
             const path=ordered.map((point,i)=>`${i?'L':'M'}${x(point.position)},${58-point.brightness_pct*.5}`).join(' ')
@@ -145,26 +145,42 @@ function SharedDaylightCurve({value}:{value:CurveControl}) {
     </section>
 }
 
-function CurveFields({value,change,context}:{value:CurveControl;change:(v:CurveControl)=>void;context:Context}) {
+function CurvePointsEditor({points,change,driver,white,prefix=''}:{points:CurvePoint[];change:(points:CurvePoint[])=>void;driver:CurveControl['driver'];white:boolean;prefix?:string}) {
+    const point=(i:number,patch:Partial<CurvePoint>)=>change(points.map((p,n)=>n===i?{...p,...patch}:p))
+    const label=(i:number,suffix:string)=>`${prefix?prefix+' ':''}Point ${i+1} ${suffix}`
+    return <><div className={c.curvePoints}>{points.map((p,i)=><fieldset className={c.point} key={i}><legend>{prefix?prefix+' ':''}Point {i+1}</legend>
+        <NumberField label={label(i,driver==='sun_elevation'?'sun elevation (°)':driver==='elapsed_minutes'?'elapsed minutes':'sensor value')} step={0.1} value={p.position} change={position=>point(i,{position})}/>
+        <NumberField label={label(i,'brightness (%)')} min={1} max={100} value={p.brightness_pct} change={brightness_pct=>point(i,{brightness_pct})}/>
+        {white&&<NumberField label={label(i,'white (K)')} min={1000} max={10000} value={p.kelvin} change={kelvin=>point(i,{kelvin})}/>}
+        <button type="button" disabled={points.length<=2} onClick={()=>change(points.filter((_,n)=>n!==i))}>Remove {prefix?prefix.toLowerCase()+' ':''}point</button>
+    </fieldset>)}</div><button type="button" disabled={points.length>=16} onClick={()=>{let position=driver==='sun_elevation'?Math.max(-90,Math.min(...points.map(p=>p.position))-2):driver==='elapsed_minutes'?Math.min(1440,Math.max(...points.map(p=>p.position))+6):Math.max(...points.map(p=>p.position))+6;while(points.some(p=>p.position===position))position+=driver==='elapsed_minutes'?-1:1;change([...points,{position,brightness_pct:1,kelvin:2702}])}}>+ {prefix?prefix+' curve point':'Curve point'}</button></>
+}
+
+function CurveFields({value,change,context,endAction}:{value:CurveControl;change:(v:CurveControl)=>void;context:Context;endAction:Program['end_action']}) {
     const outputs=context.controller.entities.filter(d=>context.controller.bindings.targets.includes(d.device_id))
-    const point=(i:number,patch:Partial<CurveControl['points'][number]>)=>change({...value,points:value.points.map((p,n)=>n===i?{...p,...patch}:p)})
-    return <><label className={s.field}>Change the lights with<select value={value.driver} onChange={e=>{const driver=e.target.value as CurveControl['driver'];change({...value,driver,sensor_id:driver==='measurement'?'':null,points:driver==='sun_elevation'?blankCurve().points:[{position:0,brightness_pct:1,kelvin:2702},{position:60,brightness_pct:100,kelvin:5500}]})}}>
+    const solar=value.driver==='sun_elevation',both=solar&&value.solar_direction==='any',separate=both&&!!value.evening_points
+    const evening=value.evening_points||value.points,night=darkPoint(evening)
+    return <><label className={s.field}>Change the lights with<select value={value.driver} onChange={e=>{const driver=e.target.value as CurveControl['driver'];change({...value,driver,evening_points:null,sensor_id:driver==='measurement'?'':null,points:driver==='sun_elevation'?blankCurve().points:[{position:0,brightness_pct:1,kelvin:2702},{position:60,brightness_pct:100,kelvin:5500}]})}}>
             <option value="sun_elevation">Natural daylight</option><option value="elapsed_minutes">Time since switch-on</option><option value="measurement">A sensor reading</option></select></label>
-        {value.driver==='sun_elevation'&&<label className={s.field}>Daylight pattern<select value={value.solar_direction} onChange={e=>change({...value,solar_direction:e.target.value as CurveControl['solar_direction']})}><option value="rising">Morning (dawn)</option><option value="setting">Evening (dusk)</option><option value="any">Morning and evening</option></select></label>}
-        {value.driver==='sun_elevation'&&value.solar_direction==='any'&&<SharedDaylightCurve value={value}/>}
+        {solar&&<label className={s.field}>Daylight pattern<select value={value.solar_direction} onChange={e=>{const solar_direction=e.target.value as CurveControl['solar_direction'];change({...value,solar_direction,points:solar_direction==='setting'?evening:value.points,evening_points:solar_direction==='any'?value.evening_points:null})}}><option value="rising">Morning (dawn)</option><option value="setting">Evening (dusk)</option><option value="any">Morning and evening</option></select></label>}
+        {both&&<label className={c.check}><input type="checkbox" checked={separate} onChange={e=>change({...value,evening_points:e.target.checked?structuredClone(value.points):null})}/>Use different morning and evening curves</label>}
+        {solar&&<div className={c.nightLevels}>
+            {separate&&<NumberField label="Morning dark-sky brightness (%)" min={1} max={100} value={darkPoint(value.points).brightness_pct} change={n=>change({...value,points:withNightBrightness(value.points,n)})}/>}
+            <NumberField label={value.solar_direction==='rising'?'Brightness before dawn (%)':'Brightness after dusk (%)'} min={1} max={100} value={night.brightness_pct} change={n=>change({...value,...(separate?{evening_points:withNightBrightness(evening,n)}:{points:withNightBrightness(value.points,n)})})}/>
+            {both&&!separate&&<p className={s.muted}>Shared with the morning. Enable different curves to change just the evening.</p>}
+            {value.solar_direction!=='rising'&&<p className={c.hint}>{night.brightness_pct}% at {night.position===-18?'the end of astronomical twilight':night.position===-20?'after astronomical twilight':`${night.position}° evening sun`}, then hold while the rule runs. {endAction==='hold'?'Keep the reached level at the end.':'Switch off at the end.'} An earlier end time can interrupt the curve.</p>}
+        </div>}
+        {both&&<SharedDaylightCurve value={value}/>}
         {value.driver==='measurement'&&<><InputPicker context={context} label="Curve measurement" numeric value={value.sensor_id?[value.sensor_id]:[]} change={ids=>change({...value,sensor_id:ids[0] || ''})}/><NumberField label="Curve measurement age limit (minutes)" min={1} max={1440} value={value.max_age_seconds/60} change={n=>change({...value,max_age_seconds:n*60})}/></>}
         <NumberField label="Brightness at switch-on (%)" min={1} max={100} value={value.initial_brightness_pct} change={initial_brightness_pct=>change({...value,initial_brightness_pct})}/>
         <p className={c.hint}>This rule switches the lights on at its start and can switch them off at its end. A separate on/off rule is not needed.</p>
-        <details className={c.details}><summary>{value.driver==='sun_elevation'&&value.solar_direction==='any'?'Edit shared morning & evening curve':'Fine-tune the light'} · {value.points.length} curve points</summary><div className={c.advancedBody}>
+        <details className={c.details}><summary>{separate?'Fine-tune morning and evening separately':both?'Edit shared morning & evening curve':'Fine-tune the light'}</summary><div className={c.advancedBody}>
         <label className={s.field}>Adjust<select value={value.color_mode} onChange={e=>change({...value,color_mode:e.target.value as CurveControl['color_mode']})}><option value="brightness">Brightness only</option>{outputs.every(d=>d.capabilities?.color_temp?.supported)&&<option value="white">Brightness and white temperature</option>}</select></label>
         <div className={s.split}>{value.color_mode==='white'&&<NumberField label="White temperature at switch-on (K)" min={1000} max={10000} value={value.initial_kelvin} change={initial_kelvin=>change({...value,initial_kelvin})}/>}
             <NumberField label="Blend into the curve over (minutes)" min={0} max={120} value={value.startup_minutes} change={startup_minutes=>change({...value,startup_minutes})}/></div>
-        <div className={c.curvePoints}>{value.points.map((p,i)=><fieldset className={c.point} key={i}><legend>Point {i+1}</legend>
-            <NumberField label={value.driver==='sun_elevation'?`Point ${i+1} sun elevation (°)`:value.driver==='elapsed_minutes'?`Point ${i+1} elapsed minutes`:`Point ${i+1} sensor value`} step={0.1} value={p.position} change={position=>point(i,{position})}/>
-            <NumberField label={`Point ${i+1} brightness (%)`} min={1} max={100} value={p.brightness_pct} change={brightness_pct=>point(i,{brightness_pct})}/>
-            {value.color_mode==='white'&&<NumberField label={`Point ${i+1} white (K)`} min={1000} max={10000} value={p.kelvin} change={kelvin=>point(i,{kelvin})}/>}<button type="button" disabled={value.points.length<=2} onClick={()=>change({...value,points:value.points.filter((_,n)=>n!==i)})}>Remove point</button>
-        </fieldset>)}</div>
-        <button type="button" disabled={value.points.length>=16} onClick={()=>{let position=value.points.at(-1)!.position+(value.solar_direction==='setting'?-2:6);while(value.points.some(p=>p.position===position)) position+=1;change({...value,points:[...value.points,{position,brightness_pct:1,kelvin:2702}]})}}>+ Curve point</button>
+        {solar&&<p className={s.muted}>Changing the dark-sky brightness adjusts intermediate brightness points too, keeping the daylight endpoint, sun angles and white temperatures. You can edit every point here. {separate?'Switching back to a shared curve uses the morning points for both periods.':''}</p>}
+        <CurvePointsEditor points={value.points} change={points=>change({...value,points})} driver={value.driver} white={value.color_mode==='white'} prefix={separate?'Morning':''}/>
+        {separate&&<CurvePointsEditor points={evening} change={evening_points=>change({...value,evening_points})} driver={value.driver} white={value.color_mode==='white'} prefix="Evening"/>}
         <p className={s.muted}>Values blend between points and hold at the nearest endpoint outside the range. Brightness can rise, fall or do both. White temperature is clamped to each lamp’s supported range.</p>
         <label className={c.check}><input type="checkbox" checked={value.respect_manual_off} onChange={e=>change({...value,respect_manual_off:e.target.checked})}/>Respect a manual switch-off until the next start</label></div></details>
     </>
@@ -241,7 +257,7 @@ export function ProgramRuleEditor({home,controller,rule,done,cancel}:{home:Home;
                 <details className={c.details}><summary>Repeat · {weekdays.length===7?'Every day':weekdays.map(i=>days[i]).join(', ')||'Choose days'}</summary><div className={s.field}><span>Active days · local start date</span><div className={s.days}>{days.map((day,i)=><button type="button" key={day} aria-pressed={weekdays.includes(i)} className={weekdays.includes(i)?s.active:''} onClick={()=>setWeekdays(weekdays.includes(i)?weekdays.filter(n=>n!==i):[...weekdays,i].sort())}>{day}</button>)}</div></div></details>
             </fieldset>
             <fieldset className={c.section}><legend>{control.kind==='curve'?'How should the light change?':'What should it do?'}</legend>
-                {control.kind==='band'?<BandFields value={control} context={context} change={v=>update({...program,control:v})}/>:control.kind==='curve'?<CurveFields value={control} context={context} change={v=>update({...program,control:v})}/>:control.kind==='sequence'?<StepEditor context={context} value={control.steps} change={steps=>update({...program,control:{...control,steps}})}/>:<>
+                {control.kind==='band'?<BandFields value={control} context={context} change={v=>update({...program,control:v})}/>:control.kind==='curve'?<CurveFields value={control} context={context} endAction={program.end_action} change={v=>update({...program,control:v})}/>:control.kind==='sequence'?<StepEditor context={context} value={control.steps} change={steps=>update({...program,control:{...control,steps}})}/>:<>
                     <p className={s.muted}>Keep the outputs on while the timing and extra conditions allow it. With force-off selected, check again every minute and whenever an output turns on.</p>
                     {dimmable&&<label className={s.field}>Brightness (optional, %)<input type="number" min={1} max={100} value={control.brightness_pct??''} onChange={e=>update({...program,control:{...control,brightness_pct:e.target.value?Number(e.target.value):null}})}/></label>}
                 </>}

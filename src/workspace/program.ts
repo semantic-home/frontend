@@ -8,7 +8,8 @@ export type SetStep = {kind:'set';action:'turn_on'|'turn_off'|'start'|'pause'|'r
 export type Step = SetStep|{kind:'wait';seconds:number}|{kind:'choose';condition:Group;then:Step[];otherwise:Step[]}
 export type Timing = {mode:'always'}|{mode:'window';start:Anchor;end:Anchor}|{mode:'events';triggers:EventTrigger[]}
 export type BandControl = {kind:'band';sensor_ids:string[];aggregation:'maximum'|'minimum'|'average';demand:'above'|'below';lower:number;upper:number;min_cycle_seconds:number;max_age_seconds:number}
-export type CurveControl = {kind:'curve';driver:'sun_elevation'|'elapsed_minutes'|'measurement';solar_direction:'rising'|'setting'|'any';sensor_id?:string|null;max_age_seconds:number;color_mode:'brightness'|'white';points:{position:number;brightness_pct:number;kelvin:number}[];initial_brightness_pct:number;initial_kelvin:number;startup_minutes:number;respect_manual_off:boolean}
+export type CurvePoint = {position:number;brightness_pct:number;kelvin:number}
+export type CurveControl = {kind:'curve';driver:'sun_elevation'|'elapsed_minutes'|'measurement';solar_direction:'rising'|'setting'|'any';sensor_id?:string|null;max_age_seconds:number;color_mode:'brightness'|'white';points:CurvePoint[];evening_points?:CurvePoint[]|null;initial_brightness_pct:number;initial_kelvin:number;startup_minutes:number;respect_manual_off:boolean}
 export type Control = BandControl|CurveControl|{kind:'sequence';steps:Step[]}|{kind:'switch';brightness_pct?:number|null;kelvin?:number|null}
 export type Program = {version:2;timing:Timing;conditions:Group;control:Control;end_action:'hold'|'off';condition_failure:'hold'|'off';max_run_minutes:number}
 export type Measurement = {value:number|null;last_reported_at:string|null;age_seconds:number|null;max_age_seconds:number;valid:boolean;issue:string|null}
@@ -20,6 +21,14 @@ export const emptyGroup = ():Group => ({kind:'all',terms:[]})
 export const defaultAction = (domain:string):SetStep => ({kind:'set',action:domain==='cleaning'?'start':'turn_on',targets:null})
 export const pointDefaults = [{position:-18,brightness_pct:1,kelvin:2702},{position:-12,brightness_pct:10,kelvin:3000},{position:-6,brightness_pct:45,kelvin:4000},{position:0,brightness_pct:100,kelvin:5500}]
 export const blankCurve = ():CurveControl => ({kind:'curve',driver:'sun_elevation',solar_direction:'rising',color_mode:'white',max_age_seconds:1800,points:structuredClone(pointDefaults),initial_brightness_pct:1,initial_kelvin:2702,startup_minutes:10,respect_manual_off:true})
+
+export const darkPoint = (points:CurvePoint[]) => points.reduce((low,p)=>p.position<low.position?p:low,points[0])
+export function withNightBrightness(points:CurvePoint[],brightness:number):CurvePoint[] {
+    const dark=darkPoint(points),day=points.reduce((high,p)=>p.position>high.position?p:high,points[0])
+    return points.map(p=>({...p,brightness_pct:p===dark?brightness:p===day?day.brightness_pct:
+        Math.round(Math.max(1,Math.min(100,day.brightness_pct===dark.brightness_pct?brightness:
+            brightness+(p.brightness_pct-dark.brightness_pct)/(day.brightness_pct-dark.brightness_pct)*(day.brightness_pct-brightness))))}))
+}
 export function preset(name:string,controller:SemanticController):Program {
     const white=controller.entities.filter(d=>controller.bindings.targets.includes(d.device_id)).every(d=>d.capabilities?.color_temp?.supported)
     const curve=():CurveControl=>({...blankCurve(),color_mode:white?'white':'brightness'})
@@ -70,8 +79,10 @@ export function briefLightingRule(program:Program) {
     const when=(a:Anchor)=>a.event==='elevation'?`${a.elevation===-20?'after astronomical twilight':a.elevation===-18?'at the end of astronomical twilight':a.elevation===-12?'at nautical twilight':a.elevation===-6?'at civil twilight':`at ${a.elevation}° sun`} (${a.direction==='rising'?'morning':'evening'})`:`at ${anchorText(a)}`
     const ordered=[...c.points].sort((a,b)=>a.position-b.position)
     const natural=ordered[0].brightness_pct<ordered.at(-1)!.brightness_pct&&ordered.every((p,i)=>i===0||p.brightness_pct>=ordered[i-1].brightness_pct)
-    const effect=c.driver==='sun_elevation'?(!natural?'Follow the custom daylight curve':c.solar_direction==='setting'?'Dim with the evening light':c.solar_direction==='rising'?'Brighten with the morning light':'Follow morning and evening light'):c.driver==='elapsed_minutes'?'Change gradually after switch-on':'Adjust to the selected sensor'
-    return `Switch on ${when(t.start)} at ${c.initial_brightness_pct}%. ${effect}. ${when(t.end)[0].toUpperCase()+when(t.end).slice(1)}, ${program.end_action==='off'?'switch off':'stop adjusting and keep the last level'}.`
+    const effect=c.driver==='sun_elevation'?(c.evening_points?'Follow separate morning and evening curves':!natural?'Follow the custom daylight curve':c.solar_direction==='setting'?'Dim with the evening light':c.solar_direction==='rising'?'Brighten with the morning light':'Follow morning and evening light'):c.driver==='elapsed_minutes'?'Change gradually after switch-on':'Adjust to the selected sensor'
+    const evening=c.evening_points||c.points,night=darkPoint(evening)
+    const resting=c.driver==='sun_elevation'&&c.solar_direction!=='rising'?` At ${night.position}° evening sun, the curve reaches ${night.brightness_pct}% and holds beyond that point.`:''
+    return `Switch on ${when(t.start)} at ${c.initial_brightness_pct}%. ${effect}.${resting} ${when(t.end)[0].toUpperCase()+when(t.end).slice(1)}, ${program.end_action==='off'?'switch off':'stop adjusting and keep the last level'}.`
 }
 
 export function programText(p:Program) {
@@ -106,6 +117,7 @@ export function programValid(p:Program) {
     const inRange=(n:number,min:number,max:number,integer=false)=>Number.isFinite(n)&&n>=min&&n<=max&&(!integer||Number.isInteger(n))
     const time=(at:string)=>/^([01]\d|2[0-3]):[0-5]\d$/.test(at)
     const optional=(n:number|null|undefined,min:number,max:number)=>n==null||inRange(n,min,max,true)
+    const curvePointsValid=(points:CurvePoint[])=>points.length>=2&&points.length<=16&&new Set(points.map(x=>x.position)).size===points.length&&points.every(x=>Number.isFinite(x.position)&&inRange(x.brightness_pct,1,100,true)&&inRange(x.kelvin,1000,10000,true)&&(c.kind!=='curve'||c.driver==='measurement'||inRange(x.position,c.driver==='sun_elevation'?-90:0,c.driver==='sun_elevation'?90:1440)))
     const keys=t.mode==='events'?new Set(t.triggers.map(x=>x.key)):new Set<string>()
     const cond=(g:Group):boolean => g.terms.length<=16&&(g.kind!=='not'||g.terms.length===1)&&(g.kind!=='any'||!!g.terms.length)&&g.terms.every(x=>
         'terms' in x?cond(x):x.kind==='trigger'?keys.has(x.key):x.kind==='clock'?time(x.start)&&time(x.end)&&x.start!==x.end:
@@ -116,7 +128,7 @@ export function programValid(p:Program) {
     const timing=t.mode==='always'||(t.mode==='window'?anchorValid(t.start)&&anchorValid(t.end)&&t.start.event!=='elapsed'&&JSON.stringify(t.start)!==JSON.stringify(t.end):
         !!t.triggers.length&&t.triggers.length<=16&&keys.size===t.triggers.length&&t.triggers.every(x=>/^[a-zA-Z0-9_-]{1,40}$/.test(x.key)&&(x.kind==='anchor'?anchorValid(x.anchor)&&x.anchor.event!=='elapsed':!!x.device_id&&(x.kind==='state'?!!x.state.trim():Number.isFinite(x.value)))))
     const control=c.kind==='band'?!!c.sensor_ids.length&&new Set(c.sensor_ids).size===c.sensor_ids.length&&Number.isFinite(c.lower)&&Number.isFinite(c.upper)&&c.lower<c.upper&&inRange(c.min_cycle_seconds,0,86400,true)&&inRange(c.max_age_seconds,60,86400,true):
-        c.kind==='curve'?c.points.length>=2&&c.points.length<=16&&new Set(c.points.map(x=>x.position)).size===c.points.length&&c.points.every(x=>Number.isFinite(x.position)&&inRange(x.brightness_pct,1,100,true)&&inRange(x.kelvin,1000,10000,true)&&(c.driver==='measurement'||inRange(x.position,c.driver==='sun_elevation'?-90:0,c.driver==='sun_elevation'?90:1440)))&&inRange(c.initial_brightness_pct,1,100,true)&&inRange(c.initial_kelvin,1000,10000,true)&&inRange(c.startup_minutes,0,120,true)&&inRange(c.max_age_seconds,60,86400,true)&&(c.driver!=='measurement'||!!c.sensor_id):
+        c.kind==='curve'?curvePointsValid(c.points)&&(!c.evening_points||(c.driver==='sun_elevation'&&c.solar_direction==='any'&&curvePointsValid(c.evening_points)))&&inRange(c.initial_brightness_pct,1,100,true)&&inRange(c.initial_kelvin,1000,10000,true)&&inRange(c.startup_minutes,0,120,true)&&inRange(c.max_age_seconds,60,86400,true)&&(c.driver!=='measurement'||!!c.sensor_id):
         c.kind==='switch'?optional(c.brightness_pct,1,100)&&optional(c.kelvin,1000,10000):!!c.steps.length&&c.steps.length<=32&&c.steps.every(step)&&duration(c.steps)<=p.max_run_minutes*60
     return timing&&cond(p.conditions)&&control&&inRange(p.max_run_minutes,1,1440,true)
 }
