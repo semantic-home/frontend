@@ -1,0 +1,32 @@
+.editor {min-width:0;}
+.editor > div:first-child {justify-content:space-between;}
+.section {display:grid;gap:16px;border:0;border-top:1px solid var(--border);padding:20px 0 0;margin:8px 0;min-width:0;}
+.section > legend {font-size:16px;font-weight:600;padding:0 10px 0 0;}
+.anchors,.curvePoints {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));gap:14px;}
+.anchor,.block,.point {display:grid;gap:14px;min-width:0;border:1px solid var(--border);border-radius:10px;padding:14px;margin:0;}
+.anchor {background:var(--surface);}
+.anchor legend,.block legend,.point legend {padding:0 6px;font-weight:500;}
+.anchor p,.point p {margin:0;}
+.conditions,.steps {display:grid;gap:16px;min-width:0;}
+.condition {display:grid;gap:14px;border-left:2px solid var(--border);padding-left:14px;min-width:0;}
+.partLabel {font-weight:600;margin:8px 0 0;}
+.check {display:flex;align-items:center;gap:10px;line-height:1.5;}
+.check input {width:auto;flex:none;}
+.presets {display:flex;gap:12px;align-items:end;flex-wrap:wrap;}
+.presets label {flex:1 1 220px;}
+.presets button {margin-bottom:0;}
+.preview {display:grid;gap:10px;border-top:1px solid var(--border);padding:18px 0 0;}
+.preview h3,.preview p {margin:0;}
+.plot {min-width:0;color:var(--text);}
+.plot svg {display:block;width:100%;min-height:150px;overflow:visible;}
+.plot text {fill:var(--text-muted);font-size:12px;}
+.plot line {stroke:var(--border);stroke-width:1;}
+.plot path {fill:none;stroke:var(--accent);stroke-width:3;vector-effect:non-scaling-stroke;}
+.readout {font-variant-numeric:tabular-nums;}
+.events {display:grid;gap:10px;list-style:none;margin:6px 0;padding:0;}
+.events li {display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:8px;}
+@container (max-width:500px) {.anchors,.curvePoints {grid-template-columns:1fr;}.condition {padding-left:10px;}}
+
+.details {display:grid;gap:14px;min-width:0;}
+.details summary {cursor:pointer;padding:12px 0;color:var(--accent-strong);font-weight:600;}
+.details[open] .curvePoints {margin-top:12px;}
